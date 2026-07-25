@@ -217,9 +217,9 @@ export default function Cart() {
 
             <div className="h-px bg-gray-200 border-dashed my-2"></div>
 
-            <div className="flex items-center justify-between text-lg font-bold text-[#2C1A14]">
-              <span>Total</span>
-              <span className="text-xl font-extrabold text-[#8C4A27]">₹{finalTotal}</span>
+            <div className="flex items-center justify-between text-[#2C1A14]">
+              <span className="text-lg font-bold">Total</span>
+              <span className="text-2xl font-black text-[#F06292] tracking-tight">₹{finalTotal}</span>
             </div>
           </div>
 
