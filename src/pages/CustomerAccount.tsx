@@ -14,7 +14,9 @@ import {
   Package,
   MapPin,
   CreditCard,
-  Tag
+  Tag,
+  Sparkles,
+  Truck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
@@ -370,29 +372,63 @@ export default function CustomerAccount() {
 
                     {/* Delivery Progress Bar */}
                     {order.status !== 'Cancelled' && (
-                      <div className="px-5 py-3.5 bg-[#FAF6F0]/60 border-t border-gray-100">
-                        <div className="grid grid-cols-4 gap-2 text-center">
-                          {[
-                            { step: 1, label: 'Placed' },
-                            { step: 2, label: 'Confirmed' },
-                            { step: 3, label: 'Shipped' },
-                            { step: 4, label: 'Delivered' }
-                          ].map((s) => {
-                            const currentStep = getStatusStep(order.status);
-                            const isDone = currentStep >= s.step;
-                            return (
-                              <div key={s.step} className="flex flex-col items-center">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mb-1 transition-all ${
-                                  isDone ? 'bg-[#8C4A27] text-white shadow-2xs' : 'bg-gray-100 text-gray-400 border border-gray-200'
-                                }`}>
-                                  {isDone ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : s.step}
+                      <div className="px-6 py-4 bg-[#FAF6F0]/70 border-t border-gray-100/80">
+                        <div className="relative">
+                          {/* Connecting Background Line */}
+                          <div className="absolute top-4 left-6 right-6 h-1 bg-gray-200 -z-0 rounded-full" />
+                          
+                          {/* Active Connecting Fill Line */}
+                          <div 
+                            className="absolute top-4 left-6 h-1 bg-[#8C4A27] -z-0 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${
+                                getStatusStep(order.status) <= 1 ? '0%' :
+                                getStatusStep(order.status) === 2 ? '33%' :
+                                getStatusStep(order.status) === 3 ? '66%' : '100%'
+                              }`
+                            }}
+                          />
+
+                          <div className="grid grid-cols-4 gap-2 relative z-10">
+                            {[
+                              { step: 1, label: 'Placed', icon: ShoppingBag },
+                              { step: 2, label: 'Confirmed', icon: Sparkles },
+                              { step: 3, label: 'Shipped', icon: Truck },
+                              { step: 4, label: 'Delivered', icon: CheckCircle2 }
+                            ].map((s) => {
+                              const currentStep = getStatusStep(order.status);
+                              const isCompleted = currentStep > s.step;
+                              const isCurrent = currentStep === s.step;
+                              const StepIcon = s.icon;
+
+                              return (
+                                <div key={s.step} className="flex flex-col items-center text-center">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                                    isCurrent 
+                                      ? 'bg-[#8C4A27] text-white ring-4 ring-[#8C4A27]/25 scale-110 shadow-md' 
+                                      : isCompleted 
+                                      ? 'bg-[#8C4A27] text-white ring-2 ring-white shadow-2xs' 
+                                      : 'bg-white text-gray-400 border-2 border-gray-200 ring-2 ring-white shadow-2xs'
+                                  }`}>
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="w-4 h-4 text-white" />
+                                    ) : (
+                                      <StepIcon className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                  <span className={`text-[11px] mt-1.5 transition-colors ${
+                                    isCurrent 
+                                      ? 'font-extrabold text-[#8C4A27]' 
+                                      : isCompleted 
+                                      ? 'font-bold text-[#2C1A14]' 
+                                      : 'font-medium text-gray-400'
+                                  }`}>
+                                    {s.label}
+                                  </span>
                                 </div>
-                                <span className={`text-[10px] font-bold ${isDone ? 'text-[#2C1A14]' : 'text-gray-400'}`}>
-                                  {s.label}
-                                </span>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     )}
