@@ -341,22 +341,60 @@ export default function CustomerAccount() {
                       </span>
                     </div>
 
-                    {/* Card Body: Item Details + Total Paid + Action Button */}
+                    {/* Card Body: Product Image + Product Name + Price + Action Button */}
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-[#2C1A14] leading-snug">
-                          {order.items_summary || 'Custom Gift Order'}
-                        </p>
-                        <p className="text-[11px] text-gray-500 font-medium">
-                          {order.shipping_address?.cart_items?.length ? `${order.shipping_address.cart_items.length} Item(s)` : 'Order Package'}
-                        </p>
+                      {/* Product Thumbnail & Title */}
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-14 h-14 rounded-xl bg-[#FAF6F0] overflow-hidden border border-gray-200/80 shrink-0 shadow-2xs">
+                          <img 
+                            src={
+                              order.shipping_address?.cart_items?.[0]?.image ||
+                              (order.items_summary?.toLowerCase().includes('frame') ? '/images/home_frames.jpg' :
+                               order.items_summary?.toLowerCase().includes('gift') ? '/images/home_gifts.jpg' :
+                               '/images/home_brownies.jpg')
+                            } 
+                            alt="Ordered product thumbnail" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/images/home_brownies.jpg';
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="font-bold text-sm text-[#2C1A14] leading-tight">
+                            {
+                              order.shipping_address?.cart_items?.[0]?.title ||
+                              (order.items_summary && order.items_summary !== 'Custom Gift Order' 
+                                ? order.items_summary 
+                                : 'Belgian Chocolate Brownie Box')
+                            }
+                          </h3>
+
+                          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                            {order.shipping_address?.cart_items?.[0]?.size && (
+                              <span className="bg-[#8C4A27]/10 text-[#8C4A27] px-2 py-0.5 rounded text-[10px] font-bold">
+                                {order.shipping_address.cart_items[0].size}
+                              </span>
+                            )}
+                            <span>
+                              Qty: {order.shipping_address?.cart_items?.[0]?.quantity || 1}
+                            </span>
+                            {order.shipping_address?.cart_items?.length > 1 && (
+                              <span className="text-[#8C4A27] font-semibold text-[11px]">
+                                + {order.shipping_address.cart_items.length - 1} more item(s)
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
+                      {/* Right Column: Price & View Details */}
                       <div className="flex items-center justify-between sm:justify-end gap-5 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100 shrink-0">
                         <div className="text-left sm:text-right">
                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">TOTAL PAID</span>
-                          <span className="font-sans font-extrabold text-xl text-[#8C4A27] tracking-tight">₹{order.total_amount}</span>
+                          <span className="font-sans font-extrabold text-xl sm:text-2xl text-[#8C4A27] tracking-tight">₹{order.total_amount}</span>
                         </div>
 
                         <button
