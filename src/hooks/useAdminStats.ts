@@ -20,7 +20,7 @@ export function useAdminStats() {
 
   const fetchStats = useCallback(async () => {
     try {
-      // Parallel fetch all 4 queries
+      // Parallel fetch all 3 queries
       const [ordersRes, productsRes, customersRes] = await Promise.all([
         supabase.from('orders').select('total_amount'),
         supabase.from('products').select('*', { count: 'exact', head: true }),
@@ -46,27 +46,37 @@ export function useAdminStats() {
   useEffect(() => {
     fetchStats();
 
-    // Subscribe to real-time changes on all 3 tables via a single channel
-    const channel = supabase
-      .channel('admin_dashboard_realtime_v2')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        console.log('⚡ Dashboard: orders changed, refreshing stats');
-        fetchStats();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-        console.log('⚡ Dashboard: products changed, refreshing stats');
-        fetchStats();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, () => {
-        console.log('⚡ Dashboard: customers changed, refreshing stats');
-        fetchStats();
-      })
-      .subscribe((status) => {
-        console.log('Dashboard stats realtime channel status:', status);
-      });
+    const uniqueChannelName = 'rt_dash_' + Math.random().toString(36).substring(2, 9);
+    let channel: any = null;
+
+    try {
+      channel = supabase
+        .channel(uniqueChannelName)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          console.log('⚡ Dashboard: orders changed, refreshing stats');
+          fetchStats();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+          console.log('⚡ Dashboard: products changed, refreshing stats');
+          fetchStats();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, () => {
+          console.log('⚡ Dashboard: customers changed, refreshing stats');
+          fetchStats();
+        })
+        .subscribe((status) => {
+          console.log('Dashboard stats realtime status:', status);
+        });
+    } catch (err) {
+      console.warn('Realtime subscription error in useAdminStats:', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {}
+      }
     };
   }, [fetchStats]);
 

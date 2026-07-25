@@ -172,23 +172,33 @@ export function useOrders() {
   useEffect(() => {
     fetchOrders();
 
-    // Real-time subscription to orders table changes via Supabase Realtime
-    const channel = supabase
-      .channel('orders_admin_realtime_v2')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          console.log('⚡ Realtime order change received in Admin:', payload.eventType, payload.new);
-          fetchOrders();
-        }
-      )
-      .subscribe((status) => {
-        console.log('Orders realtime channel status:', status);
-      });
+    const uniqueChannelName = 'rt_ord_' + Math.random().toString(36).substring(2, 9);
+    let channel: any = null;
+
+    try {
+      channel = supabase
+        .channel(uniqueChannelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload) => {
+            console.log('⚡ Realtime order change received in Admin:', payload.eventType, payload.new);
+            fetchOrders();
+          }
+        )
+        .subscribe((status) => {
+          console.log('Orders realtime channel status:', status);
+        });
+    } catch (err) {
+      console.warn('Realtime subscription error in useOrders:', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {}
+      }
     };
   }, [fetchOrders]);
 

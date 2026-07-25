@@ -43,20 +43,31 @@ export default function CustomerAccount() {
     if (customer?.phone) {
       fetchCustomerOrders(customer.phone);
 
-      const channel = supabase
-        .channel(`customer_realtime_orders_${customer.phone}`)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          () => {
-            console.log('⚡ Realtime status update for customer order received!');
-            fetchCustomerOrders(customer.phone);
-          }
-        )
-        .subscribe();
+      const uniqueChannelName = `rt_cust_ord_${customer.phone}_` + Math.random().toString(36).substring(2, 9);
+      let channel: any = null;
+
+      try {
+        channel = supabase
+          .channel(uniqueChannelName)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            () => {
+              console.log('⚡ Realtime status update for customer order received!');
+              fetchCustomerOrders(customer.phone);
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime subscription error in CustomerAccount:', err);
+      }
 
       return () => {
-        supabase.removeChannel(channel);
+        if (channel) {
+          try {
+            supabase.removeChannel(channel);
+          } catch (e) {}
+        }
       };
     }
   }, [customer]);

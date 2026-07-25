@@ -51,7 +51,6 @@ export function useProducts(categoryFilter?: string) {
       if (data && data.length > 0) {
         setProducts(data.map(mapRow));
       } else {
-        // Fallback to default design reference products if database table is empty
         setProducts(getFallbackProducts(categoryFilter));
       }
     } catch (err: any) {
@@ -65,39 +64,49 @@ export function useProducts(categoryFilter?: string) {
   useEffect(() => {
     fetchProducts();
 
-    // Real-time subscription for live product changes
-    const channel = supabase
-      .channel(`products_realtime_${categoryFilter || 'all'}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('⚡ Realtime product change:', payload.eventType);
-          const newRow = payload.new as any;
-          const oldRow = payload.old as any;
+    // Unique channel per hook instance to prevent "cannot add callbacks after subscribe" error
+    const uniqueChannelName = 'rt_prod_' + Math.random().toString(36).substring(2, 9);
+    let channel: any = null;
 
-          // If we're filtering by category, ignore irrelevant rows
-          if (categoryFilter && newRow?.category && newRow.category !== categoryFilter) {
-            return;
-          }
+    try {
+      channel = supabase
+        .channel(uniqueChannelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'products' },
+          (payload) => {
+            console.log('⚡ Realtime product change:', payload.eventType);
+            const newRow = payload.new as any;
+            const oldRow = payload.old as any;
 
-          if (payload.eventType === 'INSERT') {
-            setProducts(prev => [mapRow(newRow), ...prev]);
-          } else if (payload.eventType === 'DELETE') {
-            setProducts(prev => prev.filter(p => p.id !== oldRow.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setProducts(prev =>
-              prev.map(p => p.id === newRow.id ? mapRow(newRow) : p)
-            );
+            if (categoryFilter && newRow?.category && newRow.category !== categoryFilter) {
+              return;
+            }
+
+            if (payload.eventType === 'INSERT') {
+              setProducts(prev => [mapRow(newRow), ...prev]);
+            } else if (payload.eventType === 'DELETE') {
+              setProducts(prev => prev.filter(p => p.id !== oldRow.id));
+            } else if (payload.eventType === 'UPDATE') {
+              setProducts(prev =>
+                prev.map(p => p.id === newRow.id ? mapRow(newRow) : p)
+              );
+            }
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Products realtime channel status:', status);
-      });
+        )
+        .subscribe((status) => {
+          console.log('Products realtime status:', status);
+        });
+    } catch (err) {
+      console.warn('Realtime subscription error in useProducts:', err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {}
+      }
     };
   }, [categoryFilter, fetchProducts]);
 
