@@ -38,11 +38,15 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 space-y-10 sm:space-y-14">
       
-      {/* 1. Category Banner Cards (Fetched Live from Supabase) */}
-      {loadingCategories && activeCategories.length === 0 ? (
-        <div className="py-16 flex flex-col items-center justify-center text-[#8C4A27]">
-          <Loader2 className="w-8 h-8 animate-spin mb-2" />
-          <span className="text-xs text-[#6E5F55]">Fetching live categories...</span>
+      {/* 1. Category Banner Cards Section */}
+      {loadingCategories || activeCategories.length === 0 ? (
+        <div className="space-y-4 md:space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div 
+              key={i} 
+              className="w-full h-[160px] md:h-[280px] rounded-2xl md:rounded-3xl bg-gray-100 animate-pulse border border-gray-200/60"
+            />
+          ))}
         </div>
       ) : (
         <div className="space-y-4 md:space-y-6">
@@ -79,11 +83,12 @@ export default function Home() {
                 </div>
 
                 {/* Right Column - Image */}
-                <div className="w-[45%] md:w-1/2 h-full relative overflow-hidden">
+                <div className="w-[45%] md:w-1/2 h-full relative overflow-hidden bg-gray-200/50">
                   <img 
                     src={displayImage} 
                     alt={category.name}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="eager"
                   />
                   {/* Left Edge Seamless Fade */}
                   <div className={`absolute inset-y-0 left-0 w-8 md:w-24 bg-gradient-to-r ${styles.gradientClass} z-10`}></div>

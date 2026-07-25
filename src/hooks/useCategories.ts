@@ -39,7 +39,7 @@ const fallbackCategories: CategoryItem[] = [
 ];
 
 export function useCategories() {
-  const [categories, setCategories] = useState<CategoryItem[]>(fallbackCategories);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
