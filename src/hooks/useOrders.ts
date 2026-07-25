@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 
 export interface OrderItem {
@@ -17,7 +17,7 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = async () => {
     setLoading(true);
     setError(null);
     let allOrders: OrderItem[] = [];
@@ -70,7 +70,7 @@ export function useOrders() {
 
     setOrders(allOrders);
     setLoading(false);
-  }, []);
+  };
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderItem['status']) => {
     try {
@@ -172,35 +172,23 @@ export function useOrders() {
   useEffect(() => {
     fetchOrders();
 
-    const uniqueChannelName = 'rt_ord_' + Math.random().toString(36).substring(2, 9);
-    let channel: any = null;
-
-    try {
-      channel = supabase
-        .channel(uniqueChannelName)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            console.log('⚡ Realtime order change received in Admin:', payload.eventType, payload.new);
-            fetchOrders();
-          }
-        )
-        .subscribe((status) => {
-          console.log('Orders realtime channel status:', status);
-        });
-    } catch (err) {
-      console.warn('Realtime subscription error in useOrders:', err);
-    }
+    // Real-time subscription to orders table changes via Supabase Realtime
+    const channel = supabase
+      .channel('orders_admin_realtime_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('⚡ Realtime order change received in Admin:', payload);
+          fetchOrders();
+        }
+      )
+      .subscribe();
 
     return () => {
-      if (channel) {
-        try {
-          supabase.removeChannel(channel);
-        } catch (e) {}
-      }
+      supabase.removeChannel(channel);
     };
-  }, [fetchOrders]);
+  }, []);
 
   return { orders, loading, error, updateOrderStatus, seedSampleOrders, refetch: fetchOrders };
 }

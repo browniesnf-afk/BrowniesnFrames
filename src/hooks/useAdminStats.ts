@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 
 export interface AdminStats {
@@ -18,67 +18,66 @@ export function useAdminStats() {
     loading: true
   });
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = async () => {
     try {
-      // Parallel fetch all 3 queries
-      const [ordersRes, productsRes, customersRes] = await Promise.all([
-        supabase.from('orders').select('total_amount'),
-        supabase.from('products').select('*', { count: 'exact', head: true }),
-        supabase.from('customers').select('*', { count: 'exact', head: true }),
-      ]);
+      // 1. Fetch Orders Count & Sum
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('total_amount');
 
-      const totalOrders = ordersRes.data?.length || 0;
-      const totalSales = ordersRes.data?.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0) || 0;
+      const totalOrders = ordersData?.length || 0;
+      const totalSales = ordersData?.reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0) || 0;
+
+      // 2. Fetch Products Count
+      const { count: productsCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+      // 3. Fetch Customers Count
+      const { count: customersCount } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true });
 
       setStats({
         totalSales,
         totalOrders,
-        activeProducts: productsRes.count || 0,
-        totalCustomers: customersRes.count || 0,
+        activeProducts: productsCount || 0,
+        totalCustomers: customersCount || 0,
         loading: false
       });
     } catch (err) {
       console.error('Error fetching admin stats:', err);
       setStats(prev => ({ ...prev, loading: false }));
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchStats();
 
-    const uniqueChannelName = 'rt_dash_' + Math.random().toString(36).substring(2, 9);
-    let channel: any = null;
-
-    try {
-      channel = supabase
-        .channel(uniqueChannelName)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-          console.log('⚡ Dashboard: orders changed, refreshing stats');
-          fetchStats();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
-          console.log('⚡ Dashboard: products changed, refreshing stats');
-          fetchStats();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, () => {
-          console.log('⚡ Dashboard: customers changed, refreshing stats');
-          fetchStats();
-        })
-        .subscribe((status) => {
-          console.log('Dashboard stats realtime status:', status);
-        });
-    } catch (err) {
-      console.warn('Realtime subscription error in useAdminStats:', err);
-    }
+    // Subscribe to real-time changes on orders, products, and customers
+    const channel = supabase
+      .channel('admin_dashboard_stats_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        () => fetchStats()
+      )
+      .subscribe();
 
     return () => {
-      if (channel) {
-        try {
-          supabase.removeChannel(channel);
-        } catch (e) {}
-      }
+      supabase.removeChannel(channel);
     };
-  }, [fetchStats]);
+  }, []);
 
   return { ...stats, refetch: fetchStats };
 }

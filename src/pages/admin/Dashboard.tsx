@@ -29,13 +29,9 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-serif font-bold text-gray-900">Dashboard Overview</h1>
-          <p className="text-xs text-gray-500">Live metrics — updates automatically without refreshing.</p>
+          <p className="text-xs text-gray-500">Live metrics calculated directly from your Supabase database tables.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Live
-          </div>
           <button
             onClick={handleSeedAll}
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5"

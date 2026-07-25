@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 
 export interface ProductItem {
@@ -20,21 +20,7 @@ export function useProducts(categoryFilter?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const mapRow = (item: any): ProductItem => ({
-    id: item.id,
-    title: item.title,
-    description: item.description || '',
-    price: item.price,
-    weight: item.weight || '250g',
-    image: item.images?.[0] || '/images/home_brownies.jpg',
-    rating: item.rating || 5,
-    reviewsCount: item.reviews_count || 100,
-    badge: item.badge as any || null,
-    link: `/products/${item.slug || item.id}`,
-    category: item.category
-  });
-
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -49,8 +35,22 @@ export function useProducts(categoryFilter?: string) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setProducts(data.map(mapRow));
+        const formatted: ProductItem[] = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          description: item.description || '',
+          price: item.price,
+          weight: item.weight || '250g',
+          image: item.images?.[0] || '/images/home_brownies.jpg',
+          rating: item.rating || 5,
+          reviewsCount: item.reviews_count || 100,
+          badge: item.badge as any || null,
+          link: `/products/${item.slug || item.id}`,
+          category: item.category
+        }));
+        setProducts(formatted);
       } else {
+        // Fallback to default design reference products if database table is empty
         setProducts(getFallbackProducts(categoryFilter));
       }
     } catch (err: any) {
@@ -59,56 +59,11 @@ export function useProducts(categoryFilter?: string) {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter]);
+  };
 
   useEffect(() => {
     fetchProducts();
-
-    // Unique channel per hook instance to prevent "cannot add callbacks after subscribe" error
-    const uniqueChannelName = 'rt_prod_' + Math.random().toString(36).substring(2, 9);
-    let channel: any = null;
-
-    try {
-      channel = supabase
-        .channel(uniqueChannelName)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'products' },
-          (payload) => {
-            console.log('⚡ Realtime product change:', payload.eventType);
-            const newRow = payload.new as any;
-            const oldRow = payload.old as any;
-
-            if (categoryFilter && newRow?.category && newRow.category !== categoryFilter) {
-              return;
-            }
-
-            if (payload.eventType === 'INSERT') {
-              setProducts(prev => [mapRow(newRow), ...prev]);
-            } else if (payload.eventType === 'DELETE') {
-              setProducts(prev => prev.filter(p => p.id !== oldRow.id));
-            } else if (payload.eventType === 'UPDATE') {
-              setProducts(prev =>
-                prev.map(p => p.id === newRow.id ? mapRow(newRow) : p)
-              );
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log('Products realtime status:', status);
-        });
-    } catch (err) {
-      console.warn('Realtime subscription error in useProducts:', err);
-    }
-
-    return () => {
-      if (channel) {
-        try {
-          supabase.removeChannel(channel);
-        } catch (e) {}
-      }
-    };
-  }, [categoryFilter, fetchProducts]);
+  }, [categoryFilter]);
 
   return { products, loading, error, refetch: fetchProducts };
 }
