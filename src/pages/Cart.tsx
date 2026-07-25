@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Minus, Plus, X, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Minus, Plus, X, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
@@ -17,7 +17,7 @@ export default function Cart() {
     finalTotal 
   } = useCart();
 
-  const [inputCoupon, setInputCoupon] = useState(couponCode || 'WELCOME10');
+  const [inputCoupon, setInputCoupon] = useState(couponCode || '');
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(
     couponCode ? `Coupon "${couponCode}" applied!` : null
@@ -34,7 +34,7 @@ export default function Cart() {
     if (res.success) {
       setCouponSuccess(res.message || 'Discount code applied!');
     } else {
-      setCouponError(res.message || 'Invalid coupon code.');
+      setCouponError(res.message || 'Invalid promo code.');
     }
   };
 
@@ -43,18 +43,18 @@ export default function Cart() {
       
       {/* Header Bar */}
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-[#1C1C1C] font-sans">My Cart</h1>
+        <h1 className="text-2xl font-bold text-[#2C1A14] font-serif">My Cart</h1>
       </div>
 
       {/* Empty Cart View */}
       {cart.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 text-center border border-gray-100 shadow-2xs my-8">
-          <ShoppingBag className="w-16 h-16 mx-auto text-gray-300 mb-3" />
-          <h2 className="text-lg font-bold text-gray-800 mb-1">Your cart is empty</h2>
+          <ShoppingBag className="w-16 h-16 mx-auto text-[#8C4A27]/40 mb-3" />
+          <h2 className="text-lg font-bold text-[#2C1A14] mb-1 font-serif">Your cart is empty</h2>
           <p className="text-xs text-gray-500 mb-6">Looks like you haven't added any items to your cart yet.</p>
           <Link
             to="/categories/brownies"
-            className="inline-flex bg-[#F06292] hover:bg-[#E91E63] text-white font-bold px-6 py-3 rounded-full text-xs transition-colors shadow-xs"
+            className="inline-flex bg-[#8C4A27] hover:bg-[#733c21] text-white font-bold px-6 py-3 rounded-full text-xs transition-colors shadow-xs"
           >
             Explore Gourmet Collection
           </Link>
@@ -72,20 +72,20 @@ export default function Cart() {
                 <img 
                   src={item.image} 
                   alt={item.title} 
-                  className="w-24 h-24 rounded-2xl object-cover shrink-0 bg-gray-50 border border-gray-100" 
+                  className="w-24 h-24 rounded-2xl object-cover shrink-0 bg-[#FAF6F0] border border-gray-100" 
                 />
 
                 {/* Item Info Column */}
                 <div className="flex-1 flex flex-col justify-between self-stretch pr-6">
                   <div>
-                    <h3 className="font-bold text-sm sm:text-base text-[#1C1C1C] leading-snug">
+                    <h3 className="font-bold text-sm sm:text-base text-[#2C1A14] leading-snug">
                       {item.title}
                     </h3>
                     <p className="text-xs text-gray-400 font-medium mb-1">
                       {item.category || 'Custom Gift Hamper'}
                       {item.size ? ` • ${item.size}` : ''}
                     </p>
-                    <span className="font-bold text-base text-[#1C1C1C]">
+                    <span className="font-extrabold text-base text-[#8C4A27]">
                       ₹{item.price}
                     </span>
                   </div>
@@ -125,16 +125,19 @@ export default function Cart() {
           {/* Coupon Code Bar */}
           <form onSubmit={handleApplyCoupon} className="mb-6">
             <div className="bg-white rounded-full p-2 pl-6 border border-gray-200/80 flex items-center justify-between shadow-2xs">
-              <input 
-                type="text" 
-                placeholder="Enter Coupon Code (e.g. WELCOME10)"
-                value={inputCoupon}
-                onChange={(e) => setInputCoupon(e.target.value)}
-                className="w-full bg-transparent text-sm font-semibold text-[#1C1C1C] placeholder:text-gray-400 placeholder:font-normal focus:outline-none uppercase"
-              />
+              <div className="flex items-center gap-2 flex-1">
+                <Tag className="w-4 h-4 text-[#8C4A27] shrink-0" />
+                <input 
+                  type="text" 
+                  placeholder="Enter Promo Code (e.g. WELCOME10)"
+                  value={inputCoupon}
+                  onChange={(e) => setInputCoupon(e.target.value)}
+                  className="w-full bg-transparent text-sm font-semibold text-[#2C1A14] placeholder:text-gray-400 placeholder:font-normal focus:outline-none uppercase"
+                />
+              </div>
               <button 
                 type="submit"
-                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-colors shrink-0 cursor-pointer ml-2"
+                className="w-9 h-9 rounded-full bg-[#8C4A27] hover:bg-[#733c21] text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer ml-2 shadow-2xs"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -143,17 +146,25 @@ export default function Cart() {
             {/* Coupon Feedback Messages */}
             {couponSuccess && (
               <div className="mt-2 text-xs text-green-700 flex items-center justify-between px-3">
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> {couponSuccess}
                 </span>
-                <button type="button" onClick={removeCoupon} className="text-gray-400 hover:text-red-500 text-[10px] underline">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    removeCoupon();
+                    setInputCoupon('');
+                    setCouponSuccess(null);
+                  }} 
+                  className="text-gray-400 hover:text-red-500 text-[10px] underline cursor-pointer"
+                >
                   Remove
                 </button>
               </div>
             )}
             {couponError && (
               <div className="mt-2 text-xs text-red-600 flex items-center gap-1 px-3">
-                <AlertCircle className="w-3.5 h-3.5 text-red-500" /> {couponError}
+                <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" /> {couponError}
               </div>
             )}
           </form>
@@ -166,31 +177,31 @@ export default function Cart() {
             </div>
 
             {discount > 0 && (
-              <div className="flex items-center justify-between text-sm text-green-600 font-medium">
-                <span>Discount (WELCOME10)</span>
+              <div className="flex items-center justify-between text-sm text-green-700 font-medium">
+                <span>Discount ({couponCode})</span>
                 <span className="font-bold">-₹{discount}</span>
               </div>
             )}
 
             <div className="flex items-center justify-between text-sm text-gray-500 font-medium">
               <span>Shipping</span>
-              <span className="font-bold text-[#2E7D32]">Free</span>
+              <span className="font-bold text-green-700">Free</span>
             </div>
 
             <div className="h-px bg-gray-200 border-dashed my-2"></div>
 
-            <div className="flex items-center justify-between text-lg font-bold text-[#1C1C1C]">
+            <div className="flex items-center justify-between text-lg font-bold text-[#2C1A14]">
               <span>Total</span>
-              <span className="text-xl font-extrabold text-[#1C1C1C]">₹{finalTotal}</span>
+              <span className="text-xl font-extrabold text-[#8C4A27]">₹{finalTotal}</span>
             </div>
           </div>
 
           {/* Checkout Button */}
           <button 
             onClick={() => navigate('/checkout')}
-            className="w-full bg-[#F06292] hover:bg-[#E91E63] text-white font-bold py-4 rounded-full text-base transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center active:scale-[0.99]"
+            className="w-full bg-[#8C4A27] hover:bg-[#733c21] text-white font-bold py-4 rounded-full text-base transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
           >
-            Checkout
+            Checkout <ArrowRight className="w-5 h-5" />
           </button>
         </>
       )}

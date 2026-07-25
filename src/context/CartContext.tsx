@@ -119,42 +119,62 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const applyCouponAsync = async (code: string): Promise<{ success: boolean; message?: string }> => {
     const cleanCode = code.trim().toUpperCase();
-    if (!cleanCode) return { success: false, message: 'Please enter a coupon code.' };
+    if (!cleanCode) return { success: false, message: 'Please enter a promo code.' };
 
     try {
-      // 1. Try querying Supabase promo_codes table
-      const { data: dbPromo } = await supabase
+      // 1. Query Supabase promo_codes table directly
+      const { data: dbPromo, error } = await supabase
         .from('promo_codes')
         .select('*')
         .eq('code', cleanCode)
-        .eq('is_active', true)
         .maybeSingle();
 
-      if (dbPromo) {
-        setCouponState({
-          code: dbPromo.code,
-          type: dbPromo.discount_type || 'percentage',
-          value: dbPromo.discount_value || 10
-        });
-        return { success: true, message: `Promo code "${dbPromo.code}" applied!` };
+      if (error) {
+        console.warn('Supabase promo code fetch notice:', error.message);
+        return { success: false, message: 'Unable to validate promo code right now.' };
       }
-    } catch (e) {}
 
-    // 2. Fallback static promo rules
-    if (cleanCode === 'WELCOME10') {
-      setCouponState({ code: 'WELCOME10', type: 'percentage', value: 10 });
-      return { success: true, message: '10% OFF Welcome discount applied!' };
-    }
-    if (cleanCode === 'FESTIVE20') {
-      setCouponState({ code: 'FESTIVE20', type: 'percentage', value: 20 });
-      return { success: true, message: '20% OFF Festive discount applied!' };
-    }
-    if (cleanCode === 'FLAT100') {
-      setCouponState({ code: 'FLAT100', type: 'flat', value: 100 });
-      return { success: true, message: '₹100 FLAT discount applied!' };
-    }
+      if (!dbPromo) {
+        return { success: false, message: `Promo code "${cleanCode}" is invalid or does not exist.` };
+      }
 
-    return { success: false, message: 'Invalid or expired promo code.' };
+      if (dbPromo.is_active === false) {
+        return { success: false, message: `Promo code "${cleanCode}" is currently inactive.` };
+      }
+
+      const minSpend = Number(dbPromo.min_order_value || dbPromo.min_order_amount || 0);
+      if (minSpend > 0 && subTotal < minSpend) {
+        return { 
+          success: false, 
+          message: `Minimum order total of ₹${minSpend} required for "${cleanCode}".` 
+        };
+      }
+
+      const usageLimit = Number(dbPromo.usage_limit || 0);
+      const usedCount = Number(dbPromo.used_count || 0);
+      if (usageLimit > 0 && usedCount >= usageLimit) {
+        return { success: false, message: `Promo code "${cleanCode}" has reached its usage limit.` };
+      }
+
+      // Valid promo code from Supabase
+      const discVal = Number(dbPromo.discount_percent || dbPromo.discount_value || 10);
+      const discType = dbPromo.discount_type || 'percentage';
+
+      setCouponState({
+        code: dbPromo.code,
+        type: discType,
+        value: discVal
+      });
+
+      return { 
+        success: true, 
+        message: `🎉 Code "${dbPromo.code}" applied (${discVal}${discType === 'percentage' ? '%' : '₹'} OFF)!` 
+      };
+
+    } catch (err: any) {
+      console.error('Promo code validation error:', err);
+      return { success: false, message: 'Invalid promo code.' };
+    }
   };
 
   const removeCoupon = () => {

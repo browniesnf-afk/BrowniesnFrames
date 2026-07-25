@@ -68,11 +68,11 @@ export default function PromoManager() {
     setError(null);
     setSuccessMsg(null);
 
-    const promoPayload = {
+    const discVal = parseFloat(discountValue) || 10;
+    const promoPayload: any = {
       code: code.trim().toUpperCase(),
-      discount_type: discountType,
-      discount_value: parseFloat(discountValue),
-      min_order_amount: parseFloat(minOrder) || 0,
+      discount_percent: Math.round(discVal),
+      min_order_value: parseFloat(minOrder) || 0,
       is_active: isActive
     };
 
