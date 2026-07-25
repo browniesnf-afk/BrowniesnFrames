@@ -46,7 +46,6 @@ export default function Checkout() {
     setError(null);
 
     const itemsSummary = cart.map(item => `${item.title}${item.size ? ` (${item.size})` : ''} x${item.quantity}`).join(', ');
-    const shippingAddress = { fullName, phone, address, city, pincode };
 
     try {
       // 1. Ensure customer exists or create in Supabase
@@ -77,51 +76,94 @@ export default function Checkout() {
         console.warn('Customer upsert notice:', e);
       }
 
-      // 2. Insert order into Supabase orders table
+      // 2. Format order payload for Supabase orders table
       const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
-      const newOrderPayload = {
-        customer_id: customerId,
-        total_amount: finalTotal,
-        status: 'Pending' as const,
+      
+      const enrichedShippingAddress = {
+        order_code: orderId,
+        full_name: fullName,
+        phone: phone,
+        address: address,
+        city: city,
+        pincode: pincode,
         items_summary: itemsSummary,
-        shipping_address: shippingAddress,
-        created_at: new Date().toISOString()
+        cart_items: cart.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size || null
+        })),
+        subTotal: subTotal,
+        discount: discount,
+        appliedCoupon: couponCode || null,
+        total: finalTotal
       };
 
-      try {
-        await supabase.from('orders').insert([{
-          id: orderId,
-          ...newOrderPayload
-        }]);
-      } catch (e) {
-        console.warn('Order insert notice:', e);
+      const dbPayload: any = {
+        total_amount: finalTotal,
+        status: 'Pending',
+        shipping_address: enrichedShippingAddress
+      };
+
+      if (customerId) {
+        dbPayload.customer_id = customerId;
       }
 
-      // 3. Save order to customer local session history for instant UI reflection
+      // 3. Attempt direct Supabase insert & check for explicit errors
+      const { data: insertResult, error: insertError } = await supabase
+        .from('orders')
+        .insert([dbPayload])
+        .select();
+
+      if (insertError) {
+        console.error('Supabase order insert error:', insertError);
+        setError(`Database notice: ${insertError.message}. If you are the store admin, please run SQL in Supabase to disable RLS on 'orders'.`);
+        
+        // Even if database insert had an RLS notice, save order locally so customer data is preserved
+        const fallbackOrderLocal = {
+          id: orderId,
+          total_amount: finalTotal,
+          status: 'Pending',
+          items_summary: itemsSummary,
+          shipping_address: enrichedShippingAddress,
+          created_at: new Date().toISOString()
+        };
+        const existingLocalOrders = JSON.parse(localStorage.getItem(`orders_${phone}`) || '[]');
+        localStorage.setItem(`orders_${phone}`, JSON.stringify([fallbackOrderLocal, ...existingLocalOrders]));
+        localStorage.setItem('active_customer_session', JSON.stringify({ name: fullName, phone }));
+        
+        alert(`Order saved to session (Notice: ${insertError.message})`);
+        clearCart();
+        navigate('/account');
+        return;
+      }
+
+      const realOrderId = insertResult?.[0]?.id || orderId;
+
+      // 4. Save order to customer local session history for instant UI reflection
       const newOrderLocal = {
-        id: orderId,
+        id: realOrderId,
+        display_id: orderId,
         total_amount: finalTotal,
         status: 'Pending',
         items_summary: itemsSummary,
-        shipping_address: shippingAddress,
+        shipping_address: enrichedShippingAddress,
         created_at: new Date().toISOString()
       };
 
       const existingLocalOrders = JSON.parse(localStorage.getItem(`orders_${phone}`) || '[]');
       localStorage.setItem(`orders_${phone}`, JSON.stringify([newOrderLocal, ...existingLocalOrders]));
-
-      // 4. Save active customer session if not logged in yet
-      const activeCust = { name: fullName, phone };
-      localStorage.setItem('active_customer_session', JSON.stringify(activeCust));
+      localStorage.setItem('active_customer_session', JSON.stringify({ name: fullName, phone }));
 
       // 5. Clear Cart & Redirect to Customer Account
       clearCart();
-      alert(`🎉 Order #${orderId.slice(0, 8)} placed successfully! Status: Pending`);
+      alert(`🎉 Order #${orderId} placed successfully!`);
       navigate('/account');
 
     } catch (err: any) {
       console.error('Order creation error:', err);
-      setError('Failed to place order. Please try again.');
+      setError(`Failed to place order: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

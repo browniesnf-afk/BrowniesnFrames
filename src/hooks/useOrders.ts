@@ -22,34 +22,54 @@ export function useOrders() {
     setError(null);
     let allOrders: OrderItem[] = [];
 
-    // Check all localStorage keys for placed orders
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('orders_')) {
-          const items = JSON.parse(localStorage.getItem(key) || '[]');
-          allOrders.push(...items);
-        }
-      }
-    } catch (e) {}
-
+    // 1. Fetch live orders directly from Supabase orders table
     try {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        const dbIds = new Set(data.map(o => o.id));
-        const localUnique = allOrders.filter(lo => !dbIds.has(lo.id));
-        allOrders = [...data, ...localUnique];
+      if (error) {
+        console.warn('Supabase orders fetch notice:', error.message);
+        setError(error.message);
+      } else if (data && data.length > 0) {
+        allOrders = data.map(o => {
+          const addr = o.shipping_address || {};
+          return {
+            id: o.id,
+            customer_name: addr.full_name || o.customer_name || 'Customer',
+            customer_phone: addr.phone || o.customer_phone || 'N/A',
+            total_amount: o.total_amount,
+            status: o.status || 'Pending',
+            created_at: o.created_at,
+            items_summary: o.items_summary || addr.items_summary || 'Order items',
+            shipping_address: addr
+          };
+        });
       }
     } catch (err: any) {
-      console.warn('Orders fetch notice:', err.message);
-    } finally {
-      setOrders(allOrders);
-      setLoading(false);
+      console.warn('Orders fetch error:', err.message);
     }
+
+    // 2. Merge local storage cached orders for instant device sync
+    try {
+      const dbIds = new Set(allOrders.map(o => o.id));
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('orders_')) {
+          const items = JSON.parse(localStorage.getItem(key) || '[]');
+          for (const item of items) {
+            if (!dbIds.has(item.id)) {
+              allOrders.push(item);
+              dbIds.add(item.id);
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    setOrders(allOrders);
+    setLoading(false);
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderItem['status']) => {
@@ -102,19 +122,34 @@ export function useOrders() {
       const { data: custData } = await supabase.from('customers').upsert(sampleCustomers, { onConflict: 'phone' }).select('*');
       
       const sampleOrders = [
-        { customer_id: custData?.[0]?.id, total_amount: 798, status: 'Delivered', items_summary: 'Belgian Chocolate Brownie x2', shipping_address: { city: 'Mumbai', pin: '400001' } },
-        { customer_id: custData?.[1]?.id, total_amount: 899, status: 'Confirmed', items_summary: 'Memories Collage Frame x1', shipping_address: { city: 'Delhi', pin: '110001' } },
-        { customer_id: custData?.[2]?.id, total_amount: 1299, status: 'Shipped', items_summary: 'Premium Gift Hamper x1', shipping_address: { city: 'Bangalore', pin: '560001' } },
-        { customer_id: custData?.[3]?.id, total_amount: 1347, status: 'Pending', items_summary: 'Walnut Brownie x3', shipping_address: { city: 'Pune', pin: '411001' } },
+        { 
+          customer_id: custData?.[0]?.id, 
+          total_amount: 798, 
+          status: 'Delivered' as const, 
+          shipping_address: { full_name: 'Ananya Sharma', phone: '9876543210', items_summary: 'Belgian Chocolate Brownie x2', city: 'Mumbai', pincode: '400001' } 
+        },
+        { 
+          customer_id: custData?.[1]?.id, 
+          total_amount: 899, 
+          status: 'Confirmed' as const, 
+          shipping_address: { full_name: 'Rohan Mehta', phone: '9812345678', items_summary: 'Memories Collage Frame x1', city: 'Delhi', pincode: '110001' } 
+        },
+        { 
+          customer_id: custData?.[2]?.id, 
+          total_amount: 1299, 
+          status: 'Shipped' as const, 
+          shipping_address: { full_name: 'Priya Patel', phone: '9765432109', items_summary: 'Premium Gift Hamper x1', city: 'Bangalore', pincode: '560001' } 
+        },
+        { 
+          customer_id: custData?.[3]?.id, 
+          total_amount: 1347, 
+          status: 'Pending' as const, 
+          shipping_address: { full_name: 'Vikram Singh', phone: '9988776655', items_summary: 'Walnut Brownie x3', city: 'Pune', pincode: '411001' } 
+        },
       ];
 
       for (const order of sampleOrders) {
-        try {
-          await supabase.from('orders').insert([order]);
-        } catch (e) {
-          const { items_summary, ...rest } = order;
-          await supabase.from('orders').insert([rest]);
-        }
+        await supabase.from('orders').insert([order]);
       }
       await fetchOrders();
     } catch (err: any) {
