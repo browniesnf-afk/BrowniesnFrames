@@ -62,37 +62,58 @@ export default function CustomerAccount() {
   }, [customer]);
 
   const fetchCustomerOrders = async (customerPhone: string) => {
-    setLoadingOrders(true);
-    let combinedOrders: any[] = [];
-    try {
-      // Local order cache
-      const localSaved = JSON.parse(localStorage.getItem(`orders_${customerPhone}`) || '[]');
-      combinedOrders = [...localSaved];
+    if (!customerPhone || !customerPhone.trim()) {
+      setOrders([]);
+      setLoadingOrders(false);
+      return;
+    }
 
+    setLoadingOrders(true);
+    let finalCustomerOrders: any[] = [];
+
+    try {
+      // 1. Local order cache — strictly filtered by this customer's exact phone number
+      const rawLocalSaved = JSON.parse(localStorage.getItem(`orders_${customerPhone}`) || '[]');
+      const strictlyFilteredLocal = rawLocalSaved.filter((lo: any) => {
+        const addrPhone = lo.shipping_address?.phone || lo.customer_phone;
+        return addrPhone === customerPhone;
+      });
+
+      // 2. Fetch customer ID from Supabase
       const { data: custData } = await supabase
         .from('customers')
         .select('id')
         .eq('phone', customerPhone)
         .maybeSingle();
 
-      if (custData?.id) {
-        const { data: orderData } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('customer_id', custData.id)
-          .order('created_at', { ascending: false });
+      const customerId = custData?.id;
 
-        if (orderData && orderData.length > 0) {
-          // Merge without duplicates
-          const dbIds = new Set(orderData.map(o => o.id));
-          const uniqueLocal = localSaved.filter((lo: any) => !dbIds.has(lo.id));
-          combinedOrders = [...orderData, ...uniqueLocal];
-        }
+      // 3. Fetch all orders from Supabase & strictly filter by customer_id OR shipping_address.phone
+      const { data: dbOrders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && dbOrders && dbOrders.length > 0) {
+        const matchingDbOrders = dbOrders.filter((o: any) => {
+          const addr = o.shipping_address || {};
+          const addrPhone = addr.phone || o.customer_phone;
+          const matchesPhone = addrPhone === customerPhone;
+          const matchesId = Boolean(customerId && o.customer_id === customerId);
+          return matchesPhone || matchesId;
+        });
+
+        const dbOrderIds = new Set(matchingDbOrders.map((o: any) => o.id));
+        const uniqueLocalOrders = strictlyFilteredLocal.filter((lo: any) => !dbOrderIds.has(lo.id));
+
+        finalCustomerOrders = [...matchingDbOrders, ...uniqueLocalOrders];
+      } else {
+        finalCustomerOrders = strictlyFilteredLocal;
       }
     } catch (err) {
       console.warn('Customer orders fetch notice:', err);
     } finally {
-      setOrders(combinedOrders);
+      setOrders(finalCustomerOrders);
       setLoadingOrders(false);
     }
   };
@@ -184,6 +205,7 @@ export default function CustomerAccount() {
   const handleSignOut = () => {
     localStorage.removeItem('active_customer_session');
     setCustomer(null);
+    setOrders([]);
   };
 
   return (
