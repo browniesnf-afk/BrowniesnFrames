@@ -4,7 +4,7 @@ import {
   X, 
   Home as HomeIcon, 
   ShoppingCart, 
-  Info, 
+  Package, 
   Mail, 
   LogIn 
 } from 'lucide-react';
@@ -82,12 +82,12 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
                   </Link>
 
                   <Link 
-                    to="/#our-story" 
+                    to="/account" 
                     onClick={onClose}
                     className="flex items-center gap-4 text-base font-semibold text-[#2C1A14] hover:text-[#8C4A27] transition-colors group"
                   >
-                    <Info className="w-5 h-5 text-[#8C4A27] group-hover:scale-110 transition-transform" />
-                    <span>Our Story</span>
+                    <Package className="w-5 h-5 text-[#8C4A27] group-hover:scale-110 transition-transform" />
+                    <span>Your Orders</span>
                   </Link>
 
                   <Link 
@@ -135,7 +135,7 @@ export function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerProps) {
                   className="flex items-center gap-4 text-base font-semibold text-[#2C1A14] hover:text-[#8C4A27] transition-colors group"
                 >
                   <LogIn className="w-5 h-5 text-[#8C4A27] group-hover:scale-110 transition-transform" />
-                  <span>Sign In / Register</span>
+                  <span>My Orders & Profile</span>
                 </Link>
               </div>
 
