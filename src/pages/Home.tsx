@@ -103,19 +103,19 @@ export default function Home() {
       <section className="space-y-6">
         
         {/* Section Header with Single Top Right View All Link */}
-        <div className="flex items-end justify-between border-b border-gray-200/80 pb-3">
+        <div className="flex items-end justify-between border-b border-[#8C4A27]/15 pb-3.5">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#8C4A27] flex items-center gap-1 mb-0.5">
-              <Sparkles className="w-3 h-3 text-[#8C4A27]" /> Customer Favorites
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#8C4A27] flex items-center gap-1.5 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#8C4A27]" /> Customer Favorites
             </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#2C1A14]">
-              Featured Products
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#2C1A14]">
+              All Products
             </h2>
           </div>
 
           <Link
             to="/products"
-            className="group inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#8C4A27] hover:bg-[#733c21] py-2 px-4 rounded-full transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+            className="group inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#8C4A27] hover:bg-[#733c21] py-2.5 px-4.5 rounded-full transition-all duration-200 shadow-xs hover:shadow-md hover:scale-105 active:scale-95 cursor-pointer shrink-0"
           >
             View All <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </Link>
