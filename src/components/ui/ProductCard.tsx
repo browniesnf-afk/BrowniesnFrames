@@ -33,7 +33,7 @@ export const ProductCard = ({
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  const handleQuickAdd = () => {
+  const handleQuickAdd = (e: React.MouseEvent) => {
     addToCart({
       id: id,
       title: title,
@@ -41,13 +41,13 @@ export const ProductCard = ({
       price: price,
       image: image,
       quantity: 1
-    });
+    }, e);
   };
 
   const handleCartIconClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // 1. Add product to cart
+    // 1. Add product to cart with fly animation
     addToCart({
       id: id,
       title: title,
@@ -55,7 +55,7 @@ export const ProductCard = ({
       price: price,
       image: image,
       quantity: 1
-    });
+    }, e);
     // 2. Navigate directly to /cart page
     navigate('/cart');
   };

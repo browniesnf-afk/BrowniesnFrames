@@ -18,19 +18,19 @@ export default function PremiumGiftHamper() {
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
     addToCart({
       id: 'premium-gift-hamper',
       title: 'Premium Gift Hamper',
       category: 'Gifts',
       price: 1299,
-      image: images[0],
+      image: images[activeImageIndex] || images[0],
       quantity: quantity
-    });
+    }, e);
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
+  const handleBuyNow = (e?: React.MouseEvent) => {
+    handleAddToCart(e);
     navigate('/cart');
   };
 

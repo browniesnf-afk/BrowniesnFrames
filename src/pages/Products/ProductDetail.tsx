@@ -235,22 +235,23 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
     if (!product) return;
     const imgs = product.images && product.images.length > 0 ? product.images : ['/images/home_brownies.jpg'];
+    const activeImg = imgs[activeImageIndex] || imgs[0];
     addToCart({
       id: product.id || product.slug,
       title: product.title,
       category: product.category || 'Custom Gift Hamper',
       price: product.price,
-      image: imgs[0],
+      image: activeImg,
       quantity: quantity,
       size: selectedSize || undefined
-    });
+    }, e);
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
+  const handleBuyNow = (e?: React.MouseEvent) => {
+    handleAddToCart(e);
     navigate('/cart');
   };
 

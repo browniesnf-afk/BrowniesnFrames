@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface CartItem {
   id: string;
@@ -11,9 +12,25 @@ export interface CartItem {
   size?: string;
 }
 
+export interface FlyingItem {
+  id: number;
+  image: string;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}
+
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
+  addToCart: (
+    item: Omit<CartItem, 'quantity'> & { quantity?: number },
+    startElementOrEvent?: React.MouseEvent | HTMLElement | null
+  ) => void;
+  triggerFlyAnimation: (
+    imageSrc: string,
+    startElementOrEvent?: React.MouseEvent | HTMLElement | null
+  ) => void;
   removeFromCart: (id: string, size?: string) => void;
   updateQuantity: (id: string, quantity: number, size?: string) => void;
   clearCart: () => void;
@@ -32,12 +49,13 @@ const LOCAL_STORAGE_KEY = 'browniesnframes_cart';
 const COUPON_KEY = 'browniesnframes_coupon_data';
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
+
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Filter out legacy hardcoded demo items from old builds if present in browser localStorage
         const cleanCart = (parsed || []).filter((item: any) => 
           !(item.id === '1' && item.title === 'Gourmet Brownie Box') &&
           !(item.id === '9' && item.title === 'Curated Birthday Gift Hamper')
@@ -78,7 +96,60 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [couponState]);
 
-  const addToCart = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+  const triggerFlyAnimation = (
+    imageSrc: string,
+    startElementOrEvent?: React.MouseEvent | HTMLElement | null
+  ) => {
+    let startX = window.innerWidth / 2 - 28;
+    let startY = window.innerHeight / 2 - 28;
+
+    if (startElementOrEvent) {
+      let el: HTMLElement | null = null;
+      if (startElementOrEvent instanceof HTMLElement) {
+        el = startElementOrEvent;
+      } else if (startElementOrEvent.currentTarget instanceof HTMLElement) {
+        el = startElementOrEvent.currentTarget;
+      } else if (startElementOrEvent.target instanceof HTMLElement) {
+        el = startElementOrEvent.target;
+      }
+
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        startX = rect.left + rect.width / 2 - 28;
+        startY = rect.top + rect.height / 2 - 28;
+      }
+    }
+
+    const headerCartEl = document.getElementById('header-cart-icon') || document.querySelector('[data-cart-icon]');
+    let endX = window.innerWidth - 45;
+    let endY = 25;
+
+    if (headerCartEl) {
+      const rect = headerCartEl.getBoundingClientRect();
+      endX = rect.left + rect.width / 2 - 14;
+      endY = rect.top + rect.height / 2 - 14;
+    }
+
+    const newItem: FlyingItem = {
+      id: Date.now() + Math.random(),
+      image: imageSrc || '/images/home_brownies.jpg',
+      startX,
+      startY,
+      endX,
+      endY
+    };
+
+    setFlyingItems(prev => [...prev, newItem]);
+  };
+
+  const addToCart = (
+    newItem: Omit<CartItem, 'quantity'> & { quantity?: number },
+    startElementOrEvent?: React.MouseEvent | HTMLElement | null
+  ) => {
+    // 1. Trigger visual fly-to-cart animation
+    triggerFlyAnimation(newItem.image, startElementOrEvent);
+
+    // 2. Update cart state
     setCart(prevCart => {
       const existingIndex = prevCart.findIndex(
         item => item.id === newItem.id && item.size === newItem.size
@@ -122,7 +193,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!cleanCode) return { success: false, message: 'Please enter a promo code.' };
 
     try {
-      // 1. Query Supabase promo_codes table directly
       const { data: dbPromo, error } = await supabase
         .from('promo_codes')
         .select('*')
@@ -156,7 +226,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, message: `Promo code "${cleanCode}" has reached its usage limit.` };
       }
 
-      // Valid promo code from Supabase
       const discVal = Number(dbPromo.discount_percent || dbPromo.discount_value || 10);
       const discType = dbPromo.discount_type || 'percentage';
 
@@ -200,6 +269,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         cart,
         addToCart,
+        triggerFlyAnimation,
         removeFromCart,
         updateQuantity,
         clearCart,
@@ -213,6 +283,43 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
+
+      {/* Global Fly-to-Cart Animation Layer */}
+      <div className="fixed inset-0 pointer-events-none z-[99999] overflow-hidden">
+        <AnimatePresence>
+          {flyingItems.map(item => (
+            <motion.div
+              key={item.id}
+              initial={{
+                x: item.startX,
+                y: item.startY,
+                scale: 1,
+                opacity: 1,
+                borderRadius: '16px',
+                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)'
+              }}
+              animate={{
+                x: item.endX,
+                y: item.endY,
+                scale: 0.22,
+                opacity: 0.85,
+                borderRadius: '50%'
+              }}
+              exit={{ opacity: 0, scale: 0 }}
+              transition={{
+                duration: 0.6,
+                ease: [0.16, 1, 0.3, 1]
+              }}
+              onAnimationComplete={() => {
+                setFlyingItems(prev => prev.filter(f => f.id !== item.id));
+              }}
+              className="fixed top-0 left-0 w-14 h-14 bg-white p-1 border-2 border-[#8C4A27] overflow-hidden shadow-2xl pointer-events-none"
+            >
+              <img src={item.image} alt="Flying item" className="w-full h-full object-cover rounded-xl" />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </CartContext.Provider>
   );
 };

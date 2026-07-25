@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Menu, Search, ShoppingBag, ChevronLeft, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { SearchModal } from './SearchModal';
 import { MobileMenuDrawer } from './MobileMenuDrawer';
 import { Logo } from './ui/Logo';
@@ -75,13 +76,21 @@ const Navbar = () => {
 
               <Link 
                 to="/cart"
+                id="header-cart-icon"
+                data-cart-icon="true"
                 className="p-1.5 text-[#2C1A14] hover:text-[#8C4A27] transition-colors relative cursor-pointer flex items-center justify-center"
                 title="Shopping Cart"
               >
                 <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="absolute top-0.5 right-0.5 -translate-y-1/2 translate-x-1/2 bg-[#F06292] text-white text-[8px] sm:text-[9px] font-bold w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center border border-[#FAF6F0] shadow-xs">
+                <motion.span 
+                  key={totalItems}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: [1, 1.45, 0.85, 1.15, 1] }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className="absolute top-0.5 right-0.5 -translate-y-1/2 translate-x-1/2 bg-[#F06292] text-white text-[8px] sm:text-[9px] font-bold w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center border border-[#FAF6F0] shadow-xs"
+                >
                   {totalItems}
-                </span>
+                </motion.span>
               </Link>
             </div>
             
