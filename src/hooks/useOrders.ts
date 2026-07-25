@@ -161,6 +161,23 @@ export function useOrders() {
 
   useEffect(() => {
     fetchOrders();
+
+    // Real-time subscription to orders table changes via Supabase Realtime
+    const channel = supabase
+      .channel('orders_admin_realtime_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('⚡ Realtime order change received in Admin:', payload);
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return { orders, loading, error, updateOrderStatus, seedSampleOrders, refetch: fetchOrders };

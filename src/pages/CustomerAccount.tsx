@@ -38,10 +38,26 @@ export default function CustomerAccount() {
     }
   }, []);
 
-  // Fetch orders when customer is logged in
+  // Fetch orders & subscribe to Realtime status updates when customer is logged in
   useEffect(() => {
     if (customer?.phone) {
       fetchCustomerOrders(customer.phone);
+
+      const channel = supabase
+        .channel(`customer_realtime_orders_${customer.phone}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          () => {
+            console.log('⚡ Realtime status update for customer order received!');
+            fetchCustomerOrders(customer.phone);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [customer]);
 

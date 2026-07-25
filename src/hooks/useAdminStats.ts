@@ -53,6 +53,30 @@ export function useAdminStats() {
 
   useEffect(() => {
     fetchStats();
+
+    // Subscribe to real-time changes on orders, products, and customers
+    const channel = supabase
+      .channel('admin_dashboard_stats_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        () => fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return { ...stats, refetch: fetchStats };
