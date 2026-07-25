@@ -110,7 +110,7 @@ export default function Cart() {
                       {item.category || 'Custom Gift Hamper'}
                       {item.size ? ` • ${item.size}` : ''}
                     </p>
-                    <span className="font-extrabold text-base text-[#8C4A27]">
+                    <span className="font-black text-base text-[#2D0A14]">
                       ₹{item.price}
                     </span>
                   </div>
@@ -200,7 +200,7 @@ export default function Cart() {
           <div className="space-y-3 mb-6 px-1">
             <div className="flex items-center justify-between text-sm text-gray-500 font-medium">
               <span>Sub Total</span>
-              <span className="font-bold text-gray-900">₹{subTotal}</span>
+              <span className="font-bold text-[#2D0A14]">₹{subTotal}</span>
             </div>
 
             {discount > 0 && (
@@ -219,7 +219,7 @@ export default function Cart() {
 
             <div className="flex items-center justify-between text-[#2C1A14]">
               <span className="text-lg font-bold">Total</span>
-              <span className="text-2xl font-black text-[#F06292] tracking-tight">₹{finalTotal}</span>
+              <span className="text-2xl font-black text-[#2D0A14] tracking-tight">₹{finalTotal}</span>
             </div>
           </div>
 

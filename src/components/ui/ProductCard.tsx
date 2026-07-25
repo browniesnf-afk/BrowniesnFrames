@@ -119,7 +119,7 @@ export const ProductCard = ({
         <div>
           {/* Price & Weight on same line */}
           <div className="flex items-baseline justify-between mb-2">
-            <span className="font-serif text-base sm:text-xl font-bold text-[#2C1A14]">₹{price}</span>
+            <span className="font-serif text-base sm:text-xl font-extrabold text-[#2D0A14]">₹{price}</span>
             {weight && <span className="text-[10px] sm:text-xs text-[#6E5F55] font-sans font-medium">{weight}</span>}
           </div>
           

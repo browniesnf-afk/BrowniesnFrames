@@ -394,7 +394,7 @@ export default function CustomerAccount() {
                       <div className="flex items-center justify-between sm:justify-end gap-5 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100 shrink-0">
                         <div className="text-left sm:text-right">
                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">TOTAL PAID</span>
-                          <span className="font-sans font-extrabold text-xl sm:text-2xl text-[#8C4A27] tracking-tight">₹{order.total_amount}</span>
+                          <span className="font-sans font-black text-xl sm:text-2xl text-[#2D0A14] tracking-tight">₹{order.total_amount}</span>
                         </div>
 
                         <button
