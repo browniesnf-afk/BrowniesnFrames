@@ -415,6 +415,35 @@ export default function ProductDetail() {
           {product.description}
         </p>
 
+        {/* What's Inside Gallery (for Gift Hampers) */}
+        {(product.category?.toLowerCase() === 'gifts' || product.whats_inside) && (
+          <div className="pt-2">
+            <span className="block font-bold text-[#2C1A14] text-xs uppercase tracking-wider mb-2 font-sans">WHAT'S INSIDE</span>
+            <div className="flex items-center gap-4">
+              {[
+                { icon: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?q=80&w=200&auto=format&fit=crop', label: 'Brownies' },
+                { icon: 'https://images.unsplash.com/photo-1605651202774-7d573fd3f12d?q=80&w=200&auto=format&fit=crop', label: 'Candle' },
+                { icon: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=200&auto=format&fit=crop', label: 'Mug' },
+                { icon: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=200&auto=format&fit=crop', label: 'Cookies' }
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200/90 bg-[#FAF6F0] shadow-2xs shrink-0">
+                    <img 
+                      src={item.icon} 
+                      alt={item.label} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1605651202774-7d573fd3f12d?q=80&w=200&auto=format&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-center font-medium text-gray-700">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Dynamic Size Variants Pill Selector */}
         {productSizes && (
           <div className="pt-2">
