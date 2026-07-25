@@ -39,24 +39,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Failed to load cart from localStorage:', e);
     }
-    return [
-      {
-        id: '1',
-        title: 'Gourmet Brownie Box',
-        category: 'Custom Gift Hamper',
-        price: 699,
-        image: '/images/brownie_belgian.jpg',
-        quantity: 1
-      },
-      {
-        id: '9',
-        title: 'Curated Birthday Gift Hamper',
-        category: 'Custom Gift Hamper',
-        price: 1199,
-        image: '/images/home_gifts.jpg',
-        quantity: 1
-      }
-    ];
+    return [];
   });
 
   const [couponState, setCouponState] = useState<{
@@ -68,7 +51,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(COUPON_KEY);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return { code: 'WELCOME10', type: 'percentage', value: 10 };
+    return { code: '', type: 'percentage', value: 0 };
   });
 
   useEffect(() => {
