@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Minus, Plus, X, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag } from 'lucide-react';
+import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../supabase/client';
 
@@ -135,13 +135,14 @@ export default function Cart() {
                   </div>
                 </div>
 
-                {/* Remove Item Button */}
+                {/* Red Dustbin Remove Button */}
                 <button
                   onClick={() => removeFromCart(item.id, item.size)}
                   aria-label="Remove item"
-                  className="absolute bottom-4 right-4 p-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                  title="Remove item"
+                  className="absolute bottom-4 right-4 p-2 text-[#E53935] bg-red-50 hover:bg-red-100/90 rounded-full transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95 flex items-center justify-center border border-red-100"
                 >
-                  <X className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             ))}
