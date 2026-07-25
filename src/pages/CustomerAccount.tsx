@@ -355,7 +355,7 @@ export default function CustomerAccount() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-serif font-bold text-sm sm:text-base text-[#2C1A14]">
+                              <span className="font-mono font-bold text-[#2C1A14] text-xs sm:text-sm bg-white px-2.5 py-0.5 rounded-md border border-gray-200/80 shadow-2xs">
                                 #{displayCode}
                               </span>
                               <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${getStatusBadgeStyle(order.status)}`}>
@@ -378,8 +378,8 @@ export default function CustomerAccount() {
 
                         <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#8C4A27]/10">
                           <div className="text-left sm:text-right">
-                            <span className="text-[10px] text-[#6E5F55] uppercase tracking-wider block font-semibold">Total Paid</span>
-                            <span className="font-serif font-bold text-lg sm:text-xl text-[#8C4A27]">₹{order.total_amount}</span>
+                            <span className="text-[10px] text-[#6E5F55] uppercase tracking-wider block font-bold">TOTAL PAID</span>
+                            <span className="font-sans font-extrabold text-xl sm:text-2xl text-[#8C4A27] tracking-tight">₹{order.total_amount}</span>
                           </div>
                           <button
                             onClick={() => toggleOrderExpand(order.id)}
