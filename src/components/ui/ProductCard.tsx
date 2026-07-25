@@ -1,5 +1,5 @@
 import { Heart, Star, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
 
@@ -31,6 +31,7 @@ export const ProductCard = ({
   category
 }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   const handleQuickAdd = () => {
     addToCart({
@@ -41,6 +42,22 @@ export const ProductCard = ({
       image: image,
       quantity: 1
     });
+  };
+
+  const handleCartIconClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 1. Add product to cart
+    addToCart({
+      id: id,
+      title: title,
+      category: category || 'Custom Gift Hamper',
+      price: price,
+      image: image,
+      quantity: 1
+    });
+    // 2. Navigate directly to /cart page
+    navigate('/cart');
   };
 
   return (
@@ -115,9 +132,10 @@ export const ProductCard = ({
               Add to Cart
             </button>
             <button 
-              onClick={handleQuickAdd}
-              aria-label="Quick add to cart"
-              className="bg-[#8C4A27] hover:bg-[#733c21] text-white p-1.5 px-2.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer active:scale-95"
+              onClick={handleCartIconClick}
+              aria-label="Add product and view cart"
+              title="Go to Cart"
+              className="bg-[#8C4A27] hover:bg-[#733c21] text-white p-1.5 px-2.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
             >
               <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
