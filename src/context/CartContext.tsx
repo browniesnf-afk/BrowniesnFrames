@@ -35,7 +35,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Filter out legacy hardcoded demo items from old builds if present in browser localStorage
+        const cleanCart = (parsed || []).filter((item: any) => 
+          !(item.id === '1' && item.title === 'Gourmet Brownie Box') &&
+          !(item.id === '9' && item.title === 'Curated Birthday Gift Hamper')
+        );
+        return cleanCart;
+      }
     } catch (e) {
       console.warn('Failed to load cart from localStorage:', e);
     }
