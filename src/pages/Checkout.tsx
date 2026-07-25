@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Loader2, CheckCircle2, ShieldCheck, User, Phone, MapPin, Building, Hash } from 'lucide-react';
+import { ShoppingBag, Loader2, CheckCircle2, ShieldCheck, User, Phone, MapPin, Building, Hash, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../supabase/client';
 
@@ -45,10 +45,8 @@ export default function Checkout() {
     setLoading(true);
     setError(null);
 
-    const itemsSummary = cart.map(item => `${item.title}${item.size ? ` (${item.size})` : ''} x${item.quantity}`).join(', ');
-
     try {
-      // 1. Ensure customer exists or create in Supabase
+      // 1. Check/Lookup customer ID
       let customerId: string | null = null;
       try {
         const { data: custData } = await supabase
@@ -68,16 +66,15 @@ export default function Checkout() {
               email: `${phone}@customer.store`
             }])
             .select('id')
-            .single();
+            .maybeSingle();
 
-          customerId = newCust?.id || null;
+          if (newCust?.id) customerId = newCust.id;
         }
-      } catch (e) {
-        console.warn('Customer upsert notice:', e);
-      }
+      } catch (e) {}
 
-      // 2. Format order payload for Supabase orders table
-      const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+      // 2. Prepare Order Payload
+      const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+      const itemsSummary = cart.map(i => `${i.title} (${i.size || 'Std'}) x${i.quantity}`).join(', ');
       
       const enrichedShippingAddress = {
         order_code: orderId,
@@ -87,12 +84,13 @@ export default function Checkout() {
         city: city,
         pincode: pincode,
         items_summary: itemsSummary,
-        cart_items: cart.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size || null
+        cart_items: cart.map(i => ({
+          id: i.id,
+          title: i.title,
+          price: i.price,
+          quantity: i.quantity,
+          size: i.size || null,
+          image: i.image
         })),
         subTotal: subTotal,
         discount: discount,
@@ -103,14 +101,19 @@ export default function Checkout() {
       const dbPayload: any = {
         total_amount: finalTotal,
         status: 'Pending',
-        shipping_address: enrichedShippingAddress
+        shipping_address: enrichedShippingAddress,
+        customer_name: fullName,
+        customer_phone: phone,
+        items_summary: itemsSummary,
+        subtotal: subTotal,
+        discount: discount
       };
 
       if (customerId) {
         dbPayload.customer_id = customerId;
       }
 
-      // 3. Attempt direct Supabase insert & check for explicit errors
+      // 3. Insert into Supabase orders table
       const { data: insertResult, error: insertError } = await supabase
         .from('orders')
         .insert([dbPayload])
@@ -118,18 +121,17 @@ export default function Checkout() {
 
       if (insertError) {
         console.error('Supabase order insert error:', insertError);
-        // Show a clear, honest error — do NOT redirect as if order was placed
         if (insertError.code === '42501') {
-          setError('Unable to place order right now — our database has a configuration issue (RLS policy block). Please contact the store admin.');
+          setError('Unable to place order — database RLS policy block. Please contact the store admin.');
         } else {
           setError(`Failed to place order: ${insertError.message}`);
         }
-        return; // Stop here — do not clear cart or redirect
+        return;
       }
 
       const realOrderId = insertResult?.[0]?.id || orderId;
 
-      // 4. Save order to customer local session history for instant UI reflection
+      // 4. Save to local customer session history
       const newOrderLocal = {
         id: realOrderId,
         display_id: orderId,
@@ -146,7 +148,7 @@ export default function Checkout() {
 
       // 5. Clear Cart & Redirect to Customer Account
       clearCart();
-      alert(`🎉 Order #${orderId} placed successfully!`);
+      alert(`🎉 Order placed successfully!`);
       navigate('/account');
 
     } catch (err: any) {
@@ -158,11 +160,11 @@ export default function Checkout() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-4 sm:py-6 space-y-6">
+    <div className="max-w-md mx-auto px-4 py-4 sm:py-6 space-y-5">
       
-      {/* Header */}
+      {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#1C1C1C] font-sans">Checkout</h1>
+        <h1 className="text-2xl font-bold text-[#2C1A14] font-serif">Checkout</h1>
       </div>
 
       {error && (
@@ -171,85 +173,89 @@ export default function Checkout() {
         </div>
       )}
 
-      <form onSubmit={handlePlaceOrder} className="space-y-6">
+      <form onSubmit={handlePlaceOrder} className="space-y-5">
         
-        {/* Customer Delivery Information Form */}
-        <div className="bg-white rounded-3xl p-5 shadow-2xs border border-gray-100/80 space-y-4">
-          <h2 className="font-bold text-base text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#8C4A27]" /> Delivery Address
+        {/* Delivery Details Section */}
+        <div className="bg-white rounded-3xl p-5 shadow-2xs border border-gray-100/90 space-y-4">
+          <h2 className="font-bold text-sm text-[#2C1A14] border-b border-gray-100 pb-3 flex items-center gap-2 font-serif">
+            <MapPin className="w-4 h-4 text-[#8C4A27]" /> Delivery Details
           </h2>
 
+          {/* Full Name */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name</label>
+            <label className="block text-xs font-bold text-[#2C1A14] mb-1">Full Name</label>
             <div className="relative">
               <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input 
                 type="text"
                 required
-                placeholder="e.g. Ananya Sharma"
+                placeholder="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#8C4A27]"
+                className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0]/60 border border-gray-200 rounded-xl text-xs text-[#2C1A14] font-medium focus:bg-white focus:outline-none focus:border-[#8C4A27]"
               />
             </div>
           </div>
 
+          {/* Mobile Number */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Mobile Number (For Updates)</label>
+            <label className="block text-xs font-bold text-[#2C1A14] mb-1">Mobile Number</label>
             <div className="relative">
               <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <span className="absolute left-8 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-600">+91</span>
+              <span className="absolute left-8 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8C4A27]">+91</span>
               <input 
                 type="tel"
                 required
                 maxLength={10}
-                placeholder="9876543210"
+                placeholder="10-digit mobile number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                className="w-full pl-16 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-mono focus:outline-none focus:border-[#8C4A27]"
+                className="w-full pl-16 pr-3.5 py-2.5 bg-[#FAF6F0]/60 border border-gray-200 rounded-xl text-xs text-[#2C1A14] font-mono font-medium focus:bg-white focus:outline-none focus:border-[#8C4A27]"
               />
             </div>
           </div>
 
+          {/* Address */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Flat / House No. / Street Address</label>
+            <label className="block text-xs font-bold text-[#2C1A14] mb-1">Delivery Address</label>
             <textarea 
               required
               rows={2}
-              placeholder="House 42, Green Park Avenue..."
+              placeholder="House / Flat No., Street, Area"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#8C4A27]"
+              className="w-full p-3 bg-[#FAF6F0]/60 border border-gray-200 rounded-xl text-xs text-[#2C1A14] font-medium focus:bg-white focus:outline-none focus:border-[#8C4A27]"
             />
           </div>
 
+          {/* City & Pincode */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">City</label>
+              <label className="block text-xs font-bold text-[#2C1A14] mb-1">City</label>
               <div className="relative">
                 <Building className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input 
                   type="text"
                   required
-                  placeholder="Chennai"
+                  placeholder="City"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#8C4A27]"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0]/60 border border-gray-200 rounded-xl text-xs text-[#2C1A14] font-medium focus:bg-white focus:outline-none focus:border-[#8C4A27]"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Pincode</label>
+              <label className="block text-xs font-bold text-[#2C1A14] mb-1">Pincode</label>
               <div className="relative">
                 <Hash className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input 
                   type="text"
                   required
                   maxLength={6}
-                  placeholder="600001"
+                  placeholder="6-digit Pincode"
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-mono focus:outline-none focus:border-[#8C4A27]"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-[#FAF6F0]/60 border border-gray-200 rounded-xl text-xs text-[#2C1A14] font-mono font-medium focus:bg-white focus:outline-none focus:border-[#8C4A27]"
                 />
               </div>
             </div>
@@ -257,59 +263,64 @@ export default function Checkout() {
 
         </div>
 
-        {/* Order Items Summary */}
-        <div className="bg-white rounded-3xl p-5 shadow-2xs border border-gray-100/80 space-y-3">
-          <h2 className="font-bold text-base text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-[#8C4A27]" /> Order Summary ({cart.length} items)
+        {/* Order Summary */}
+        <div className="bg-white rounded-3xl p-5 shadow-2xs border border-gray-100/90 space-y-3">
+          <h2 className="font-bold text-sm text-[#2C1A14] border-b border-gray-100 pb-3 flex items-center justify-between font-serif">
+            <span className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-[#8C4A27]" /> Order Summary
+            </span>
+            <span className="text-xs font-semibold bg-[#8C4A27]/10 text-[#8C4A27] px-2.5 py-0.5 rounded-full">
+              {cart.length} Item(s)
+            </span>
           </h2>
 
           <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto pr-1">
             {cart.map(item => (
               <div key={`${item.id}-${item.size || ''}`} className="py-2.5 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img src={item.image} alt={item.title} className="w-10 h-10 rounded-lg object-cover bg-gray-50 border border-gray-100 shrink-0" />
+                  <img src={item.image} alt={item.title} className="w-10 h-10 rounded-xl object-cover bg-[#FAF6F0] border border-gray-100 shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-bold text-gray-900 truncate">{item.title}</p>
+                    <p className="font-bold text-[#2C1A14] truncate">{item.title}</p>
                     <p className="text-gray-400 text-[10px]">Qty: {item.quantity} {item.size ? `• ${item.size}` : ''}</p>
                   </div>
                 </div>
-                <span className="font-bold text-gray-900 shrink-0">₹{item.price * item.quantity}</span>
+                <span className="font-bold text-[#8C4A27] shrink-0">₹{item.price * item.quantity}</span>
               </div>
             ))}
           </div>
 
           <div className="border-t border-gray-100 pt-3 space-y-2 text-xs">
             <div className="flex justify-between text-gray-500">
-              <span>Sub Total</span>
-              <span className="font-bold text-gray-900">₹{subTotal}</span>
+              <span>Subtotal</span>
+              <span className="font-bold text-[#2C1A14]">₹{subTotal}</span>
             </div>
 
             {discount > 0 && (
-              <div className="flex justify-between text-green-600">
+              <div className="flex justify-between text-green-700 font-semibold">
                 <span>Discount ({couponCode})</span>
-                <span className="font-bold">-₹{discount}</span>
+                <span>-₹{discount}</span>
               </div>
             )}
 
             <div className="flex justify-between text-gray-500">
-              <span>Delivery Charges</span>
-              <span className="font-bold text-[#2E7D32]">FREE</span>
+              <span>Delivery Fee</span>
+              <span className="font-bold text-green-700">FREE</span>
             </div>
 
-            <div className="border-t border-dashed border-gray-200 pt-2 flex justify-between text-base font-extrabold text-gray-900">
-              <span>Total Payable</span>
+            <div className="border-t border-dashed border-gray-200 pt-2 flex justify-between text-base font-extrabold text-[#2C1A14]">
+              <span>Total Amount</span>
               <span className="text-[#8C4A27]">₹{finalTotal}</span>
             </div>
           </div>
         </div>
 
-        {/* Security Info */}
-        <div className="flex items-center justify-center gap-4 text-[10px] text-gray-500 font-medium">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-green-600" /> Cash on Delivery Available
+        {/* Cash on Delivery Badge */}
+        <div className="flex items-center justify-center gap-4 text-[11px] text-gray-500 font-medium">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-green-600" /> Cash on Delivery Available
           </span>
-          <span className="flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Instant Order Confirmation
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-green-600" /> Instant Order Confirmation
           </span>
         </div>
 
@@ -317,14 +328,16 @@ export default function Checkout() {
         <button
           type="submit"
           disabled={loading || cart.length === 0}
-          className="w-full bg-[#F06292] hover:bg-[#E91E63] text-white font-bold py-4 rounded-full text-base transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center active:scale-[0.99]"
+          className="w-full bg-[#8C4A27] hover:bg-[#733c21] text-white font-bold py-4 rounded-2xl text-base transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
         >
           {loading ? (
             <span className="flex items-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin" /> Placing Your Order...
             </span>
           ) : (
-            `Place Order (₹${finalTotal})`
+            <>
+              Place Order (₹{finalTotal}) <ArrowRight className="w-5 h-5" />
+            </>
           )}
         </button>
 
