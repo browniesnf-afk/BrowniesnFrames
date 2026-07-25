@@ -98,7 +98,7 @@ export default function ProductsManager() {
         category: p.category,
         badge: p.badge || null,
         images: p.images,
-        sizes: p.sizes || null
+        metadata: { sizes: p.sizes || [] }
       }));
 
       const { error } = await supabase
@@ -193,7 +193,7 @@ export default function ProductsManager() {
       ? formData.images 
       : ['/images/home_brownies.jpg'];
 
-    const productPayload = {
+    const productPayload: any = {
       title: formData.title,
       slug: formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       description: formData.description,
@@ -202,7 +202,8 @@ export default function ProductsManager() {
       category: formData.category,
       badge: formData.badge || null,
       images: productImages,
-      sizes: formData.sizes.length > 0 ? formData.sizes : null
+      // Store sizes in metadata JSONB to avoid schema cache errors if 'sizes' column doesn't exist
+      metadata: { sizes: formData.sizes.length > 0 ? formData.sizes : [] }
     };
 
     try {
@@ -258,6 +259,8 @@ export default function ProductsManager() {
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
+    // Read sizes from metadata.sizes (new) or product.sizes (legacy) for backward compatibility
+    const existingSizes = (product as any).metadata?.sizes || product.sizes || (product.category === 'frames' ? DEFAULT_FRAME_SIZES : []);
     setFormData({
       title: product.title,
       description: product.description,
@@ -266,7 +269,7 @@ export default function ProductsManager() {
       category: product.category,
       badge: product.badge || '',
       images: product.images || [],
-      sizes: product.sizes || (product.category === 'frames' ? DEFAULT_FRAME_SIZES : [])
+      sizes: existingSizes
     });
     setIsModalOpen(true);
   };
