@@ -35,10 +35,21 @@ export default function Home() {
     }
   };
 
+  const getCategoryTagline = (slug: string) => {
+    switch (slug.toLowerCase()) {
+      case 'brownies':
+        return 'Rich. Fudgy.\nIrresistible.';
+      case 'frames':
+        return 'Your memories.\nBeautifully framed.';
+      case 'gifts':
+      default:
+        return 'Thoughtful gifts\nfor every occasion.';
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 space-y-10 sm:space-y-14">
       
-      {/* 🔒 LOCKED COMPONENT: Home Page Category Cards (Brownies, Frames, Gifts) - Matches exact reference design */}
       {/* 1. Category Banner Cards Section */}
       {loadingCategories || activeCategories.length === 0 ? (
         <div className="space-y-4 md:space-y-6">
@@ -68,14 +79,11 @@ export default function Home() {
                     {category.name}
                   </h2>
                   
-                  {/* Divider with Diamond */}
-                  <div className="flex items-center gap-1 mb-2 md:mb-4 opacity-75">
-                    <div className="h-[1px] w-6 md:w-10 bg-current"></div>
-                    <div className="w-1 md:w-1.5 h-1 md:h-1.5 rotate-45 bg-current"></div>
-                  </div>
+                  {/* Clean Horizontal Line (No Diamond) */}
+                  <div className="h-[2px] w-7 md:w-10 bg-current opacity-70 my-2 md:my-3"></div>
                   
-                  <p className="text-[11px] md:text-base whitespace-pre-line mb-3 md:mb-6 opacity-90 leading-tight md:leading-relaxed font-sans text-current">
-                    {category.description || `Handcrafted ${category.name.toLowerCase()} made just for you.`}
+                  <p className="text-[11px] md:text-base whitespace-pre-line mb-3 md:mb-6 opacity-90 leading-snug font-sans text-current">
+                    {getCategoryTagline(category.slug)}
                   </p>
                   
                   <div className="uppercase tracking-widest text-[9px] md:text-xs font-medium flex items-center gap-1 opacity-90 group-hover:opacity-100 group-hover:gap-2 transition-all text-current">
