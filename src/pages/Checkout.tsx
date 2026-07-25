@@ -284,7 +284,7 @@ export default function Checkout() {
                     <p className="text-gray-400 text-[10px]">Qty: {item.quantity} {item.size ? `• ${item.size}` : ''}</p>
                   </div>
                 </div>
-                <span className="font-extrabold text-[#2D0A14] shrink-0">₹{item.price * item.quantity}</span>
+                <span className="font-sans font-black text-sm text-[#2D0D15] shrink-0">₹{item.price * item.quantity}</span>
               </div>
             ))}
           </div>
@@ -292,7 +292,7 @@ export default function Checkout() {
           <div className="border-t border-gray-100 pt-3 space-y-2 text-xs">
             <div className="flex justify-between text-gray-500">
               <span>Subtotal</span>
-              <span className="font-bold text-[#2D0A14]">₹{subTotal}</span>
+              <span className="font-sans font-bold text-sm text-[#2D0D15]">₹{subTotal}</span>
             </div>
 
             {discount > 0 && (
@@ -309,7 +309,7 @@ export default function Checkout() {
 
             <div className="border-t border-dashed border-gray-200 pt-2 flex justify-between text-base font-extrabold text-[#2C1A14]">
               <span>Total Amount</span>
-              <span className="text-[#2D0A14] text-lg font-black">₹{finalTotal}</span>
+              <span className="text-[#2D0D15] text-xl font-sans font-black tracking-tight">₹{finalTotal}</span>
             </div>
           </div>
         </div>

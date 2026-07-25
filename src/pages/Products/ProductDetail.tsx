@@ -401,9 +401,9 @@ export default function ProductDetail() {
 
         {/* Price & Special Offer Tag */}
         <div className="flex items-center gap-2.5 pt-1">
-          <span className="font-sans text-2xl sm:text-3xl font-extrabold text-[#2D0A14]">₹{product.price}</span>
+          <span className="font-sans text-3xl sm:text-4xl font-black text-[#2D0D15] tracking-tight">₹{product.price}</span>
           {product.compare_at_price && (
-            <span className="text-sm text-gray-400 line-through">₹{product.compare_at_price}</span>
+            <span className="text-sm text-gray-400 line-through font-semibold">₹{product.compare_at_price}</span>
           )}
           <span className="bg-[#E8F5E9] text-[#2E7D32] px-2.5 py-0.5 rounded-full text-[11px] font-bold">
             Special Offer
