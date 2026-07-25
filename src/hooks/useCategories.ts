@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 
 export interface CategoryItem {
@@ -43,7 +43,7 @@ export function useCategories() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -68,11 +68,41 @@ export function useCategories() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+
+    // Real-time subscription for live category changes
+    const channel = supabase
+      .channel('categories_realtime_admin')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        (payload) => {
+          console.log('⚡ Realtime category change:', payload.eventType);
+          if (payload.eventType === 'INSERT') {
+            setCategories(prev => [...prev, { ...payload.new as CategoryItem, is_active: (payload.new as any).is_active ?? true }]);
+          } else if (payload.eventType === 'DELETE') {
+            setCategories(prev => prev.filter(c => c.id !== (payload.old as any).id));
+          } else if (payload.eventType === 'UPDATE') {
+            setCategories(prev =>
+              prev.map(c => c.id === (payload.new as CategoryItem).id
+                ? { ...payload.new as CategoryItem, is_active: (payload.new as any).is_active ?? true }
+                : c
+              )
+            );
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Categories realtime channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchCategories]);
 
   const activeCategories = categories.filter(c => c.is_active !== false);
 

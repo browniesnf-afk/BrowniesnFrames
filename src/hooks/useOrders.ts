@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 
 export interface OrderItem {
@@ -17,7 +17,7 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
     let allOrders: OrderItem[] = [];
@@ -70,7 +70,7 @@ export function useOrders() {
 
     setOrders(allOrders);
     setLoading(false);
-  };
+  }, []);
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderItem['status']) => {
     try {
@@ -174,21 +174,23 @@ export function useOrders() {
 
     // Real-time subscription to orders table changes via Supabase Realtime
     const channel = supabase
-      .channel('orders_admin_realtime_channel')
+      .channel('orders_admin_realtime_v2')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
-          console.log('⚡ Realtime order change received in Admin:', payload);
+          console.log('⚡ Realtime order change received in Admin:', payload.eventType, payload.new);
           fetchOrders();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Orders realtime channel status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchOrders]);
 
   return { orders, loading, error, updateOrderStatus, seedSampleOrders, refetch: fetchOrders };
 }

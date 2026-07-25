@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 
 export interface ProductItem {
@@ -20,7 +20,21 @@ export function useProducts(categoryFilter?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+  const mapRow = (item: any): ProductItem => ({
+    id: item.id,
+    title: item.title,
+    description: item.description || '',
+    price: item.price,
+    weight: item.weight || '250g',
+    image: item.images?.[0] || '/images/home_brownies.jpg',
+    rating: item.rating || 5,
+    reviewsCount: item.reviews_count || 100,
+    badge: item.badge as any || null,
+    link: `/products/${item.slug || item.id}`,
+    category: item.category
+  });
+
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -35,20 +49,7 @@ export function useProducts(categoryFilter?: string) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formatted: ProductItem[] = data.map(item => ({
-          id: item.id,
-          title: item.title,
-          description: item.description || '',
-          price: item.price,
-          weight: item.weight || '250g',
-          image: item.images?.[0] || '/images/home_brownies.jpg',
-          rating: item.rating || 5,
-          reviewsCount: item.reviews_count || 100,
-          badge: item.badge as any || null,
-          link: `/products/${item.slug || item.id}`,
-          category: item.category
-        }));
-        setProducts(formatted);
+        setProducts(data.map(mapRow));
       } else {
         // Fallback to default design reference products if database table is empty
         setProducts(getFallbackProducts(categoryFilter));
@@ -59,11 +60,46 @@ export function useProducts(categoryFilter?: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryFilter]);
 
   useEffect(() => {
     fetchProducts();
-  }, [categoryFilter]);
+
+    // Real-time subscription for live product changes
+    const channel = supabase
+      .channel(`products_realtime_${categoryFilter || 'all'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('⚡ Realtime product change:', payload.eventType);
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+
+          // If we're filtering by category, ignore irrelevant rows
+          if (categoryFilter && newRow?.category && newRow.category !== categoryFilter) {
+            return;
+          }
+
+          if (payload.eventType === 'INSERT') {
+            setProducts(prev => [mapRow(newRow), ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setProducts(prev => prev.filter(p => p.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            setProducts(prev =>
+              prev.map(p => p.id === newRow.id ? mapRow(newRow) : p)
+            );
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Products realtime channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [categoryFilter, fetchProducts]);
 
   return { products, loading, error, refetch: fetchProducts };
 }
