@@ -1,4 +1,4 @@
-import { Heart, Star, ShoppingCart } from 'lucide-react';
+import { Star, ShoppingCart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
@@ -82,11 +82,6 @@ export const ProductCard = ({
             {badge}
           </div>
         )}
-
-        {/* Heart */}
-        <button className="absolute top-2.5 right-2.5 p-1 text-gray-700 hover:text-red-500 transition-colors">
-          <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
-        </button>
       </div>
 
       {/* Content */}
