@@ -118,25 +118,13 @@ export default function Checkout() {
 
       if (insertError) {
         console.error('Supabase order insert error:', insertError);
-        setError(`Database notice: ${insertError.message}. If you are the store admin, please run SQL in Supabase to disable RLS on 'orders'.`);
-        
-        // Even if database insert had an RLS notice, save order locally so customer data is preserved
-        const fallbackOrderLocal = {
-          id: orderId,
-          total_amount: finalTotal,
-          status: 'Pending',
-          items_summary: itemsSummary,
-          shipping_address: enrichedShippingAddress,
-          created_at: new Date().toISOString()
-        };
-        const existingLocalOrders = JSON.parse(localStorage.getItem(`orders_${phone}`) || '[]');
-        localStorage.setItem(`orders_${phone}`, JSON.stringify([fallbackOrderLocal, ...existingLocalOrders]));
-        localStorage.setItem('active_customer_session', JSON.stringify({ name: fullName, phone }));
-        
-        alert(`Order saved to session (Notice: ${insertError.message})`);
-        clearCart();
-        navigate('/account');
-        return;
+        // Show a clear, honest error — do NOT redirect as if order was placed
+        if (insertError.code === '42501') {
+          setError('Unable to place order right now — our database has a configuration issue (RLS policy block). Please contact the store admin.');
+        } else {
+          setError(`Failed to place order: ${insertError.message}`);
+        }
+        return; // Stop here — do not clear cart or redirect
       }
 
       const realOrderId = insertResult?.[0]?.id || orderId;

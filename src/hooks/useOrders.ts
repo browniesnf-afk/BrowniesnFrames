@@ -74,13 +74,23 @@ export function useOrders() {
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderItem['status']) => {
     try {
-      // 1. Update Supabase database
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId);
+      // Only attempt Supabase update if orderId is a valid UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
 
-      if (error) console.warn('Supabase status update notice:', error.message);
+      if (isUUID) {
+        // 1. Update Supabase database
+        const { error } = await supabase
+          .from('orders')
+          .update({ status: newStatus })
+          .eq('id', orderId);
+
+        if (error) {
+          console.warn('Supabase status update notice:', error.message);
+          return { success: false, error: error.message };
+        }
+      } else {
+        console.warn('Skipping Supabase update — order ID is not a valid UUID:', orderId);
+      }
 
       // 2. Update local state
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
