@@ -10,6 +10,9 @@ export interface CartItem {
   image: string;
   quantity: number;
   size?: string;
+  custom_images?: string[];
+  custom_text?: string;
+  is_customizable?: boolean;
 }
 
 export interface FlyingItem {

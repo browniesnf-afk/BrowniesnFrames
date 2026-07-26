@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Minus, Plus, Search, Loader2 } from 'lucide-react';
+import { Star, Minus, Plus, Search, Loader2, Upload, Sparkles, X, AlertCircle } from 'lucide-react';
 import { supabase } from '../../supabase/client';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
@@ -234,9 +234,48 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [customImages, setCustomImages] = useState<string[]>([]);
+  const [customText, setCustomText] = useState('');
+  const [customError, setCustomError] = useState<string | null>(null);
+
+  const handleCustomImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files).slice(0, 4 - customImages.length);
+
+    fileArray.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          setCustomImages(prev => [...prev, reader.result as string].slice(0, 4));
+          setCustomError(null);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeCustomImage = (index: number) => {
+    setCustomImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleAddToCart = (e?: React.MouseEvent) => {
     if (!product) return;
+
+    const isCustomizable = product.is_customizable || product.category === 'frames' || product.category === 'Frames';
+
+    if (isCustomizable) {
+      if (customImages.length === 0) {
+        setCustomError('Please upload at least 1 photo for your custom product.');
+        return;
+      }
+      if (!customText.trim()) {
+        setCustomError('Please enter your custom text/message for the print.');
+        return;
+      }
+    }
+
     const imgs = product.images && product.images.length > 0 ? product.images : ['/images/home_brownies.jpg'];
     const activeImg = imgs[activeImageIndex] || imgs[0];
     addToCart({
@@ -246,11 +285,28 @@ export default function ProductDetail() {
       price: product.price,
       image: activeImg,
       quantity: quantity,
-      size: selectedSize || undefined
+      size: selectedSize || undefined,
+      custom_images: customImages.length > 0 ? customImages : undefined,
+      custom_text: customText.trim() || undefined,
+      is_customizable: isCustomizable
     }, e);
   };
 
   const handleBuyNow = (e?: React.MouseEvent) => {
+    if (!product) return;
+    const isCustomizable = product.is_customizable || product.category === 'frames' || product.category === 'Frames';
+
+    if (isCustomizable) {
+      if (customImages.length === 0) {
+        setCustomError('Please upload at least 1 photo for your custom product.');
+        return;
+      }
+      if (!customText.trim()) {
+        setCustomError('Please enter your custom text/message for the print.');
+        return;
+      }
+    }
+
     handleAddToCart(e);
     navigate('/cart');
   };
@@ -438,6 +494,74 @@ export default function ProductDetail() {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Customization Options UI (Required if Customizable or Frame) */}
+        {(product.is_customizable || product.category === 'frames' || product.category === 'Frames') && (
+          <div className="p-4 sm:p-5 bg-[#FAF6F0] rounded-2xl border border-[#8C4A27]/25 space-y-3.5 my-3 shadow-2xs">
+            <div className="flex items-center gap-2 text-[#8C4A27] font-bold text-xs sm:text-sm">
+              <Sparkles className="w-4 h-4" /> Customization Options (Required)
+            </div>
+
+            {/* 1. Photo Upload (1-4 Photos) */}
+            <div>
+              <label className="block text-xs font-bold text-gray-800 mb-1">
+                Upload Your Photo(s) <span className="text-red-500">*</span> <span className="text-gray-400 font-normal">(1 - 4 Photos)</span>
+              </label>
+              
+              <div className="flex flex-wrap gap-2.5 my-2">
+                {customImages.map((imgUrl, idx) => (
+                  <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-[#8C4A27] shadow-2xs group">
+                    <img src={imgUrl} alt={`Custom upload ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeCustomImage(idx)}
+                      className="absolute top-0.5 right-0.5 bg-red-600 text-white rounded-full p-0.5 shadow-xs hover:bg-red-700 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+
+                {customImages.length < 4 && (
+                  <label className="w-16 h-16 rounded-xl border-2 border-dashed border-[#8C4A27]/40 bg-white hover:bg-[#F5EAE1] text-[#8C4A27] flex flex-col items-center justify-center cursor-pointer transition-colors shadow-2xs">
+                    <Upload className="w-5 h-5 mb-0.5" />
+                    <span className="text-[9px] font-bold">+ Photo</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleCustomImageUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                )}
+              </div>
+              {customImages.length === 0 && (
+                <p className="text-[10px] text-gray-500">Click '+ Photo' to upload your high-res photos for printing.</p>
+              )}
+            </div>
+
+            {/* 2. Custom Text Field */}
+            <div>
+              <label className="block text-xs font-bold text-gray-800 mb-1">
+                Custom Text / Name / Message <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                placeholder="e.g. Our Happy Memories 2026, Roshini &amp; Family..."
+                value={customText}
+                onChange={(e) => { setCustomText(e.target.value); setCustomError(null); }}
+                className="w-full p-2.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#8C4A27]"
+              />
+            </div>
+
+            {customError && (
+              <div className="p-2.5 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-medium flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" /> {customError}
+              </div>
+            )}
           </div>
         )}
 

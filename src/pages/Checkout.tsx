@@ -90,7 +90,10 @@ export default function Checkout() {
           price: i.price,
           quantity: i.quantity,
           size: i.size || null,
-          image: i.image
+          image: i.image,
+          custom_images: i.custom_images || null,
+          custom_text: i.custom_text || null,
+          is_customizable: i.is_customizable || false
         })),
         subTotal: subTotal,
         discount: discount,

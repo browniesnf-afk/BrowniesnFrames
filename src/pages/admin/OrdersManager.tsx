@@ -13,7 +13,8 @@ import {
   MapPin,
   Tag,
   Package,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
@@ -283,14 +284,62 @@ export default function OrdersManager() {
                 </div>
               </div>
 
-              {/* Items Summary */}
-              <div className="space-y-2 border-b border-gray-100 pb-4">
+              {/* Items Summary & Customization Data */}
+              <div className="space-y-3 border-b border-gray-100 pb-4">
                 <h4 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
-                  <Package className="w-4 h-4 text-[#8C4A27]" /> Items Ordered
+                  <Package className="w-4 h-4 text-[#8C4A27]" /> Items Ordered &amp; Customizations
                 </h4>
-                <div className="p-3 bg-gray-50 rounded-xl font-medium text-gray-800 leading-relaxed">
-                  {selectedOrder.items_summary || 'Gourmet Brownies & Custom Gifts'}
-                </div>
+                
+                {selectedOrder.shipping_address?.cart_items && selectedOrder.shipping_address.cart_items.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedOrder.shipping_address.cart_items.map((item: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-200/70 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-gray-900">{item.title} {item.size ? `(${item.size})` : ''}</span>
+                          <span className="font-semibold text-gray-700">Qty: {item.quantity} • ₹{item.price}</span>
+                        </div>
+
+                        {/* Customer Customization Details (Photos & Custom Text) */}
+                        {(item.custom_images?.length > 0 || item.custom_text || item.is_customizable) && (
+                          <div className="p-3 bg-[#FAF6F0] border border-[#8C4A27]/30 rounded-lg space-y-2.5">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#8C4A27]">
+                              <Sparkles className="w-3.5 h-3.5" /> Customer Print Details
+                            </div>
+
+                            {/* Custom Text */}
+                            {item.custom_text && (
+                              <div className="text-xs">
+                                <span className="text-gray-500 block text-[10px] font-bold uppercase">Custom Text to Print:</span>
+                                <span className="font-bold text-[#2C1A14] bg-white px-2.5 py-1 rounded border border-[#8C4A27]/20 inline-block mt-0.5 shadow-2xs">
+                                  "{item.custom_text}"
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Custom Uploaded Images */}
+                            {item.custom_images && item.custom_images.length > 0 && (
+                              <div>
+                                <span className="text-gray-500 block text-[10px] font-bold uppercase mb-1">Uploaded Photo(s) ({item.custom_images.length}):</span>
+                                <div className="flex flex-wrap gap-2">
+                                  {item.custom_images.map((imgUrl: string, i: number) => (
+                                    <a key={i} href={imgUrl} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-[#8C4A27]/40 shadow-2xs hover:opacity-90 transition-opacity">
+                                      <img src={imgUrl} alt={`Customer upload ${i+1}`} className="w-full h-full object-cover" />
+                                    </a>
+                                  ))}
+                                </div>
+                                <span className="text-[10px] text-gray-400 mt-1 block">Click photo to open full high-res image.</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl font-medium text-gray-800 leading-relaxed text-xs">
+                    {selectedOrder.items_summary || 'Gourmet Brownies & Custom Gifts'}
+                  </div>
+                )}
               </div>
 
               {/* Pricing Breakdown */}
