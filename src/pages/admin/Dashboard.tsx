@@ -116,7 +116,7 @@ export default function AdminDashboardPage() {
                   <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4 font-mono font-bold text-gray-900">#{order.id.slice(0, 8)}</td>
                     <td className="p-4 font-medium text-gray-800">{order.items_summary || 'Order Items'}</td>
-                    <td className="p-4 font-serif font-bold text-gray-900 text-sm">₹{order.total_amount}</td>
+                    <td className="p-4 font-sans font-extrabold text-[#111827] text-sm sm:text-base tracking-tight">₹{order.total_amount}</td>
                     <td className="p-4">
                       <span className={`
                         px-2.5 py-1 rounded-full text-[10px] font-bold
