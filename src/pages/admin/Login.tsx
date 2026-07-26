@@ -2,61 +2,80 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../context/AuthContext';
-import { Loader2, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Loader2, Mail, Lock, ShieldCheck, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@gmail.com');
-  const [password, setPassword] = useState('admin123456');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [email, setEmail] = useState('roshinibrownies@gmail.com');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const navigate = useNavigate();
   const { demoLogin } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      setError('Please provide both email and password.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // 1. Attempt Sign In with Supabase
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (isRegisterMode) {
+        // Register Mode: Call supabase.auth.signUp
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: password,
+        });
 
-      if (signInErr) {
-        // 2. If user doesn't exist yet in Supabase Auth, attempt Sign Up
-        if (signInErr.message.toLowerCase().includes('invalid login credentials')) {
-          const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-            email,
-            password,
-          });
+        if (signUpErr) {
+          throw signUpErr;
+        }
 
-          if (signUpErr) throw signUpErr;
+        if (signUpData.user) {
+          // Attempt linking user in admins table
+          try {
+            await supabase.from('admins').insert([{ id: signUpData.user.id, email: cleanEmail, role: 'Super Admin' }]);
+          } catch (e) {}
 
-          if (signUpData.user) {
-            await supabase.from('admins').upsert([{ id: signUpData.user.id, email, role: 'Super Admin' }]);
-            
-            if (signUpData.session) {
-              navigate('/admin/dashboard');
-              return;
-            } else {
-              setSuccessMsg('Created admin user in Supabase! If email confirmation is disabled, you can sign in now or click Quick Demo Login below.');
-              return;
-            }
+          if (signUpData.session) {
+            setSuccessMsg(`🎉 Admin account created successfully! Logging you in...`);
+            setTimeout(() => navigate('/admin/dashboard'), 1200);
+          } else {
+            setSuccessMsg(`🎉 Account registered for ${cleanEmail}! If email confirmation is enabled in your Supabase project, check your inbox to confirm. Otherwise, switch to Sign In tab to log in.`);
+            setIsRegisterMode(false);
           }
         }
-        throw signInErr;
-      }
+      } else {
+        // Sign In Mode: Call supabase.auth.signInWithPassword
+        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: password,
+        });
 
-      if (data.user) {
-        navigate('/admin/dashboard');
+        if (signInErr) {
+          if (signInErr.message.toLowerCase().includes('invalid login credentials')) {
+            throw new Error(`Account not found or password incorrect. If you haven't registered ${cleanEmail} yet, click "Register Admin" tab above.`);
+          }
+          throw signInErr;
+        }
+
+        if (data.user) {
+          navigate('/admin/dashboard');
+        }
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to login with Supabase. Click "Quick Demo Login" above to enter instantly.');
+      console.error('Auth error:', err);
+      setError(err.message || 'Authentication failed. Please check your credentials or Supabase Auth settings.');
     } finally {
       setLoading(false);
     }
@@ -98,27 +117,44 @@ const Login = () => {
             </button>
           </div>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400 font-medium">Or Supabase Auth</span></div>
+          {/* Mode Switcher Tabs */}
+          <div className="flex rounded-xl bg-gray-100 p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => { setIsRegisterMode(false); setError(null); setSuccessMsg(null); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                !isRegisterMode ? 'bg-white text-[#8C4A27] shadow-2xs' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              <LogIn className="w-3.5 h-3.5" /> Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsRegisterMode(true); setError(null); setSuccessMsg(null); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                isRegisterMode ? 'bg-white text-[#8C4A27] shadow-2xs' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" /> Register Admin
+            </button>
           </div>
 
-          <form className="space-y-4" onSubmit={handleLogin}>
+          <form className="space-y-4" onSubmit={handleAuth}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-xs">
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-xs leading-relaxed">
                 {error}
               </div>
             )}
 
             {successMsg && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-xs">
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-xs leading-relaxed">
                 {successMsg}
               </div>
             )}
             
             <div>
               <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
-                Email Address
+                Admin Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -131,7 +167,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#8C4A27]"
-                  placeholder="admin@gmail.com"
+                  placeholder="roshinibrownies@gmail.com"
                 />
               </div>
             </div>
@@ -151,7 +187,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#8C4A27]"
-                  placeholder="••••••••"
+                  placeholder="Enter your password (min 6 chars)"
                 />
               </div>
             </div>
@@ -159,9 +195,15 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-xs font-medium text-white bg-gray-900 hover:bg-black transition-colors disabled:opacity-70 mt-2"
+              className="w-full bg-[#2C1A14] hover:bg-black text-white font-medium py-2.5 px-4 rounded-lg text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in / Register Admin with Supabase'}
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              ) : isRegisterMode ? (
+                <>Register New Admin Account</>
+              ) : (
+                <>Sign In with Supabase</>
+              )}
             </button>
           </form>
 
