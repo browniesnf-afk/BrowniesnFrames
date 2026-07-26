@@ -162,7 +162,7 @@ export default function OrdersManager() {
                       <td className="p-4 max-w-xs font-medium text-gray-800 truncate">
                         {order.items_summary || 'Custom Order'}
                       </td>
-                      <td className="p-4 font-serif font-bold text-gray-900 text-sm">
+                      <td className="p-4 font-sans font-extrabold text-[#111827] text-sm sm:text-base tracking-tight">
                         ₹{order.total_amount}
                       </td>
                       <td className="p-4 text-gray-400">
@@ -309,7 +309,7 @@ export default function OrdersManager() {
                   </div>
                   <div className="border-t border-gray-200/80 pt-2 flex justify-between text-base font-extrabold text-gray-900">
                     <span>Total Amount</span>
-                    <span className="text-[#8C4A27] text-lg">₹{selectedOrder.total_amount}</span>
+                    <span className="text-[#111827] font-extrabold text-xl">₹{selectedOrder.total_amount}</span>
                   </div>
                 </div>
               </div>

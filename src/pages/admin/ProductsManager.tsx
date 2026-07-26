@@ -458,7 +458,7 @@ export default function ProductsManager() {
                         {product.category}
                       </span>
                     </td>
-                    <td className="p-4 font-semibold text-gray-900">₹{product.price}</td>
+                    <td className="p-4 font-sans font-extrabold text-[#111827] text-sm tracking-tight">₹{product.price}</td>
                     <td className="p-4 font-medium">
                       {(product.stock ?? 50) === 0 ? (
                         <span className="text-red-600 font-bold">Out of stock</span>
