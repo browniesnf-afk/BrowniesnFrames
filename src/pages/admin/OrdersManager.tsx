@@ -160,8 +160,35 @@ export default function OrdersManager() {
                         <div className="font-semibold text-gray-900">{name}</div>
                         <div className="text-[10px] text-gray-400 font-mono">+91 {phone}</div>
                       </td>
-                      <td className="p-4 max-w-xs font-medium text-gray-800 truncate">
-                        {order.items_summary || 'Custom Order'}
+                      <td className="p-4 max-w-sm">
+                        {addr?.cart_items && addr.cart_items.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {addr.cart_items.map((item: any, idx: number) => {
+                              const itemImg = item.image || item.custom_images?.[0] || '/images/home_brownies.jpg';
+                              return (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <img 
+                                    src={itemImg} 
+                                    alt={item.title} 
+                                    className="w-7 h-7 rounded-md object-cover bg-gray-100 border border-gray-200 shrink-0 shadow-2xs"
+                                  />
+                                  <div className="text-xs font-medium text-gray-900 truncate">
+                                    <span className="font-semibold text-gray-900">{item.title}</span> {item.size ? <span className="text-[10px] text-gray-500">({item.size})</span> : null} <span className="text-xs font-bold text-[#8C4A27]">x{item.quantity}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 font-medium text-gray-800 text-xs">
+                            <img 
+                              src="/images/home_brownies.jpg" 
+                              alt="Product thumbnail" 
+                              className="w-7 h-7 rounded-md object-cover bg-gray-100 border border-gray-200 shrink-0 shadow-2xs"
+                            />
+                            <span>{order.items_summary || 'Custom Order'}</span>
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 font-sans font-extrabold text-[#111827] text-sm sm:text-base tracking-tight">
                         ₹{order.total_amount}

@@ -115,7 +115,36 @@ export default function AdminDashboardPage() {
                 {recentOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4 font-mono font-bold text-gray-900">#{order.id.slice(0, 8)}</td>
-                    <td className="p-4 font-medium text-gray-800">{order.items_summary || 'Order Items'}</td>
+                    <td className="p-4 max-w-xs">
+                      {order.shipping_address?.cart_items && order.shipping_address.cart_items.length > 0 ? (
+                        <div className="space-y-1">
+                          {order.shipping_address.cart_items.map((item: any, idx: number) => {
+                            const itemImg = item.image || item.custom_images?.[0] || '/images/home_brownies.jpg';
+                            return (
+                              <div key={idx} className="flex items-center gap-2">
+                                <img 
+                                  src={itemImg} 
+                                  alt={item.title} 
+                                  className="w-6 h-6 rounded object-cover bg-gray-100 border border-gray-200 shrink-0 shadow-2xs"
+                                />
+                                <div className="text-xs font-medium text-gray-900 truncate">
+                                  <span>{item.title}</span> <span className="text-xs font-bold text-[#8C4A27]">x{item.quantity}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs font-medium text-gray-800">
+                          <img 
+                            src="/images/home_brownies.jpg" 
+                            alt="Product thumbnail" 
+                            className="w-6 h-6 rounded object-cover bg-gray-100 border border-gray-200 shrink-0"
+                          />
+                          <span>{order.items_summary || 'Order Items'}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 font-sans font-extrabold text-[#111827] text-sm sm:text-base tracking-tight">₹{order.total_amount}</td>
                     <td className="p-4">
                       <span className={`
