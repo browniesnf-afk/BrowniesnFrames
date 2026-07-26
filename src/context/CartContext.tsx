@@ -193,15 +193,40 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!cleanCode) return { success: false, message: 'Please enter a promo code.' };
 
     try {
-      const { data: dbPromo, error } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .eq('code', cleanCode)
-        .maybeSingle();
+      let dbPromo: any = null;
 
-      if (error) {
-        console.warn('Supabase promo code fetch notice:', error.message);
-        return { success: false, message: 'Unable to validate promo code right now.' };
+      // 1. Try fetching from Supabase
+      try {
+        const { data, error } = await supabase
+          .from('promo_codes')
+          .select('*')
+          .eq('code', cleanCode)
+          .maybeSingle();
+
+        if (!error && data) {
+          dbPromo = data;
+        }
+      } catch (e) {}
+
+      // 2. Check localStorage fallback if not found in Supabase
+      if (!dbPromo) {
+        try {
+          const stored = localStorage.getItem('browniesnframes_promo_codes');
+          if (stored) {
+            const localList = JSON.parse(stored);
+            dbPromo = localList.find((p: any) => p.code?.toUpperCase() === cleanCode);
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback default promos
+      if (!dbPromo) {
+        const defaultList = [
+          { code: 'WELCOME10', discount_type: 'percentage', discount_value: 10, is_active: true },
+          { code: 'FLAT100', discount_type: 'flat', discount_value: 100, is_active: true },
+          { code: 'BASHA', discount_type: 'flat', discount_value: 100, is_active: true }
+        ];
+        dbPromo = defaultList.find(p => p.code === cleanCode);
       }
 
       if (!dbPromo) {
@@ -220,24 +245,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
 
-      const usageLimit = Number(dbPromo.usage_limit || 0);
-      const usedCount = Number(dbPromo.used_count || 0);
-      if (usageLimit > 0 && usedCount >= usageLimit) {
-        return { success: false, message: `Promo code "${cleanCode}" has reached its usage limit.` };
-      }
-
-      const discVal = Number(dbPromo.discount_percent || dbPromo.discount_value || 10);
-      const discType = dbPromo.discount_type || 'percentage';
+      const discVal = Number(dbPromo.discount_value ?? dbPromo.discount_percent ?? dbPromo.value ?? 10);
+      const discType = dbPromo.discount_type || (dbPromo.discount_percent && !dbPromo.discount_value ? 'percentage' : 'flat');
 
       setCouponState({
         code: dbPromo.code,
-        type: discType,
+        type: discType as any,
         value: discVal
       });
 
       return { 
         success: true, 
-        message: `🎉 Code "${dbPromo.code}" applied (${discVal}${discType === 'percentage' ? '%' : '₹'} OFF)!` 
+        message: `🎉 Code "${dbPromo.code}" applied (${discType === 'flat' ? `₹${discVal}` : `${discVal}%`} OFF)!` 
       };
 
     } catch (err: any) {

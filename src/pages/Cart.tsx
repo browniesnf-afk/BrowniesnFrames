@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { supabase } from '../supabase/client';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -23,30 +22,6 @@ export default function Cart() {
   const [couponSuccess, setCouponSuccess] = useState<string | null>(
     couponCode ? `Coupon "${couponCode}" applied!` : null
   );
-  const [hasActivePromos, setHasActivePromos] = useState<boolean>(false);
-
-  // Check if any active promo codes exist in Supabase
-  useEffect(() => {
-    const checkPromos = async () => {
-      try {
-        const { data } = await supabase
-          .from('promo_codes')
-          .select('id')
-          .eq('is_active', true)
-          .limit(1);
-
-        if (data && data.length > 0) {
-          setHasActivePromos(true);
-        } else {
-          setHasActivePromos(false);
-        }
-      } catch (e) {
-        setHasActivePromos(false);
-      }
-    };
-
-    checkPromos();
-  }, []);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,54 +123,52 @@ export default function Cart() {
             ))}
           </div>
 
-          {/* Dynamic Coupon Code Bar — Only shown if active promo codes exist in Supabase OR a promo code is applied */}
-          {(hasActivePromos || couponCode) && (
-            <form onSubmit={handleApplyCoupon} className="mb-6">
-              <div className="bg-white rounded-full p-2 pl-6 border border-gray-200/80 flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-2 flex-1">
-                  <Tag className="w-4 h-4 text-[#8C4A27] shrink-0" />
-                  <input 
-                    type="text" 
-                    placeholder="Enter Promo Code"
-                    value={inputCoupon}
-                    onChange={(e) => setInputCoupon(e.target.value)}
-                    className="w-full bg-transparent text-sm font-semibold text-[#2C1A14] placeholder:text-gray-400 placeholder:font-normal focus:outline-none uppercase"
-                  />
-                </div>
+          {/* Coupon Code Input Bar */}
+          <form onSubmit={handleApplyCoupon} className="mb-6">
+            <div className="bg-white rounded-full p-2 pl-6 border border-gray-200/80 flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-2 flex-1">
+                <Tag className="w-4 h-4 text-[#8C4A27] shrink-0" />
+                <input 
+                  type="text" 
+                  placeholder="Enter Promo Code"
+                  value={inputCoupon}
+                  onChange={(e) => setInputCoupon(e.target.value)}
+                  className="w-full bg-transparent text-sm font-semibold text-[#2C1A14] placeholder:text-gray-400 placeholder:font-normal focus:outline-none uppercase"
+                />
+              </div>
+              <button 
+                type="submit"
+                className="w-9 h-9 rounded-full bg-[#8C4A27] hover:bg-[#733c21] text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer ml-2 shadow-2xs"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Coupon Feedback Messages */}
+            {couponSuccess && (
+              <div className="mt-2 text-xs text-green-700 flex items-center justify-between px-3">
+                <span className="flex items-center gap-1 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> {couponSuccess}
+                </span>
                 <button 
-                  type="submit"
-                  className="w-9 h-9 rounded-full bg-[#8C4A27] hover:bg-[#733c21] text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer ml-2 shadow-2xs"
+                  type="button" 
+                  onClick={() => {
+                    removeCoupon();
+                    setInputCoupon('');
+                    setCouponSuccess(null);
+                  }} 
+                  className="text-gray-400 hover:text-red-500 text-[10px] underline cursor-pointer"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  Remove
                 </button>
               </div>
-
-              {/* Coupon Feedback Messages */}
-              {couponSuccess && (
-                <div className="mt-2 text-xs text-green-700 flex items-center justify-between px-3">
-                  <span className="flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> {couponSuccess}
-                  </span>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      removeCoupon();
-                      setInputCoupon('');
-                      setCouponSuccess(null);
-                    }} 
-                    className="text-gray-400 hover:text-red-500 text-[10px] underline cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-              {couponError && (
-                <div className="mt-2 text-xs text-red-600 flex items-center gap-1 px-3">
-                  <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" /> {couponError}
-                </div>
-              )}
-            </form>
-          )}
+            )}
+            {couponError && (
+              <div className="mt-2 text-xs text-red-600 flex items-center gap-1 px-3">
+                <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" /> {couponError}
+              </div>
+            )}
+          </form>
 
           {/* Summary Calculations */}
           <div className="space-y-3 mb-6 px-1">

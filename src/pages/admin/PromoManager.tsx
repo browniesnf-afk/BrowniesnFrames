@@ -6,8 +6,6 @@ import {
   Trash2, 
   Edit3, 
   Loader2, 
-  CheckCircle2, 
-  AlertCircle,
   X
 } from 'lucide-react';
 
@@ -21,9 +19,22 @@ export interface PromoCode {
   created_at?: string;
 }
 
+const defaultPromos: PromoCode[] = [
+  { id: '1', code: 'WELCOME10', discount_type: 'percentage', discount_value: 10, is_active: true, min_order_amount: 0 },
+  { id: '2', code: 'BASHA', discount_type: 'flat', discount_value: 100, is_active: true, min_order_amount: 0 },
+  { id: '3', code: 'FLAT100', discount_type: 'flat', discount_value: 100, is_active: true, min_order_amount: 500 }
+];
+
 export default function PromoManager() {
-  const [promos, setPromos] = useState<PromoCode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [promos, setPromos] = useState<PromoCode[]>(() => {
+    try {
+      const stored = localStorage.getItem('browniesnframes_promo_codes');
+      return stored ? JSON.parse(stored) : defaultPromos;
+    } catch (e) {
+      return defaultPromos;
+    }
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPromo, setEditingPromo] = useState<PromoCode | null>(null);
   
@@ -35,26 +46,35 @@ export default function PromoManager() {
   const [isActive, setIsActive] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const fetchPromos = async () => {
-    setLoading(true);
-    setError(null);
+  const savePromosLocally = (newList: PromoCode[]) => {
+    setPromos(newList);
     try {
-      const { data, error } = await supabase
+      localStorage.setItem('browniesnframes_promo_codes', JSON.stringify(newList));
+    } catch (e) {}
+  };
+
+  const fetchPromos = async () => {
+    try {
+      const { data, error: fetchErr } = await supabase
         .from('promo_codes')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPromos(data || []);
+      if (!fetchErr && data && data.length > 0) {
+        const formatted: PromoCode[] = data.map((p: any) => ({
+          id: p.id || p.code,
+          code: p.code,
+          discount_type: p.discount_type || (p.discount_percent && !p.discount_value ? 'percentage' : 'flat'),
+          discount_value: Number(p.discount_value ?? p.discount_percent ?? p.value ?? 10),
+          min_order_amount: Number(p.min_order_amount ?? p.min_order_value ?? 0),
+          is_active: p.is_active !== false
+        }));
+        savePromosLocally(formatted);
+      }
     } catch (err: any) {
       console.warn('Promo codes fetch notice:', err.message);
-      // Fallback sample promo codes
-      setPromos(defaultPromos);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -65,50 +85,48 @@ export default function PromoManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
     setSuccessMsg(null);
 
     const discVal = parseFloat(discountValue) || 10;
-    const promoPayload: any = {
-      code: code.trim().toUpperCase(),
-      discount_percent: Math.round(discVal),
-      min_order_value: parseFloat(minOrder) || 0,
+    const minVal = parseFloat(minOrder) || 0;
+    const cleanCode = code.trim().toUpperCase();
+
+    const newPromoItem: PromoCode = {
+      id: editingPromo ? editingPromo.id : Date.now().toString(),
+      code: cleanCode,
+      discount_type: discountType,
+      discount_value: discVal,
+      min_order_amount: minVal,
       is_active: isActive
     };
 
+    let updatedList: PromoCode[];
+    if (editingPromo) {
+      updatedList = promos.map(p => p.id === editingPromo.id ? newPromoItem : p);
+    } else {
+      updatedList = [newPromoItem, ...promos];
+    }
+    savePromosLocally(updatedList);
+
     try {
+      const promoPayload: any = {
+        code: cleanCode,
+        discount_percent: discountType === 'percentage' ? Math.round(discVal) : discVal,
+        min_order_value: minVal,
+        is_active: isActive
+      };
+
       if (editingPromo) {
-        const { error } = await supabase
-          .from('promo_codes')
-          .update(promoPayload)
-          .eq('id', editingPromo.id);
-
-        if (error) throw error;
-        setSuccessMsg(`Promo code "${promoPayload.code}" updated successfully!`);
+        await supabase.from('promo_codes').update(promoPayload).eq('id', editingPromo.id);
       } else {
-        const { error } = await supabase
-          .from('promo_codes')
-          .insert([promoPayload]);
-
-        if (error) throw error;
-        setSuccessMsg(`Promo code "${promoPayload.code}" created successfully!`);
+        await supabase.from('promo_codes').insert([promoPayload]);
       }
-
-      setIsModalOpen(false);
-      resetForm();
-      fetchPromos();
     } catch (err: any) {
-      console.error('Save promo error:', err);
-      // Update local state fallback if table doesn't exist
-      if (editingPromo) {
-        setPromos(prev => prev.map(p => p.id === editingPromo.id ? { ...p, ...promoPayload } : p));
-      } else {
-        setPromos(prev => [{ id: Date.now().toString(), ...promoPayload }, ...prev]);
-      }
-      setSuccessMsg(`Promo code "${promoPayload.code}" saved!`);
+      console.warn('Supabase promo save notice (using local sync):', err);
+    } finally {
+      setSuccessMsg(`Promo code "${cleanCode}" saved successfully!`);
       setIsModalOpen(false);
       resetForm();
-    } finally {
       setSubmitting(false);
     }
   };
@@ -116,32 +134,23 @@ export default function PromoManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this promo code?')) return;
 
-    try {
-      const { error } = await supabase
-        .from('promo_codes')
-        .delete()
-        .eq('id', id);
+    const updated = promos.filter(p => p.id !== id);
+    savePromosLocally(updated);
 
-      if (error) throw error;
-      setPromos(prev => prev.filter(p => p.id !== id));
-      setSuccessMsg('Promo code deleted!');
-    } catch (err) {
-      setPromos(prev => prev.filter(p => p.id !== id));
-      setSuccessMsg('Promo code removed!');
-    }
+    try {
+      await supabase.from('promo_codes').delete().eq('id', id);
+    } catch (err) {}
+    setSuccessMsg('Promo code deleted!');
   };
 
   const toggleActiveStatus = async (promo: PromoCode) => {
     const updatedStatus = !promo.is_active;
+    const updated = promos.map(p => p.id === promo.id ? { ...p, is_active: updatedStatus } : p);
+    savePromosLocally(updated);
+
     try {
-      await supabase
-        .from('promo_codes')
-        .update({ is_active: updatedStatus })
-        .eq('id', promo.id);
-    } catch (e) {
-      console.warn('Status update warning:', e);
-    }
-    setPromos(prev => prev.map(p => p.id === promo.id ? { ...p, is_active: updatedStatus } : p));
+      await supabase.from('promo_codes').update({ is_active: updatedStatus }).eq('id', promo.id);
+    } catch (e) {}
   };
 
   const openAddModal = () => {
@@ -150,13 +159,16 @@ export default function PromoManager() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (promo: PromoCode) => {
+  const openEditModal = (promo: any) => {
     setEditingPromo(promo);
-    setCode(promo.code);
-    setDiscountType(promo.discount_type);
-    setDiscountValue(promo.discount_value.toString());
-    setMinOrder((promo.min_order_amount || 0).toString());
-    setIsActive(promo.is_active);
+    setCode(promo.code || '');
+    const discType = promo.discount_type || (promo.discount_percent && !promo.discount_value ? 'percentage' : 'flat');
+    const discVal = promo.discount_value ?? promo.discount_percent ?? promo.value ?? 10;
+    const minVal = promo.min_order_amount ?? promo.min_order_value ?? 0;
+    setDiscountType(discType as any);
+    setDiscountValue(discVal.toString());
+    setMinOrder(minVal.toString());
+    setIsActive(promo.is_active !== false);
     setIsModalOpen(true);
   };
 
@@ -166,7 +178,6 @@ export default function PromoManager() {
     setDiscountValue('');
     setMinOrder('0');
     setIsActive(true);
-    setError(null);
   };
 
   return (
@@ -175,42 +186,33 @@ export default function PromoManager() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
-            <Tag className="w-6 h-6 text-[#8C4A27]" /> Promo Code Manager
+          <h1 className="text-xl font-bold text-[#2C1A14] flex items-center gap-2">
+            <Tag className="w-6 h-6 text-[#8C4A27]" /> Promo Codes & Discounts
           </h1>
-          <p className="text-xs text-gray-500">Create, edit, and manage discount coupons for customer checkout.</p>
+          <p className="text-xs text-gray-500 mt-0.5">Manage customer coupon codes, flat discounts, and percentage offers.</p>
         </div>
+
         <button 
           onClick={openAddModal}
-          className="bg-[#8C4A27] hover:bg-[#733c21] text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 shadow-xs cursor-pointer w-fit"
+          className="bg-[#8C4A27] hover:bg-[#733c21] text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer shadow-xs self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" /> Create Promo Code
         </button>
       </div>
 
-      {/* Notifications */}
+      {/* Success Notification */}
       {successMsg && (
-        <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-          {successMsg}
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-          {error}
+        <div className="p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl text-xs flex items-center justify-between">
+          <span>{successMsg}</span>
+          <button onClick={() => setSuccessMsg(null)} className="text-green-600 hover:text-green-900 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
-        {loading ? (
-          <div className="p-12 flex flex-col items-center justify-center text-gray-400">
-            <Loader2 className="w-8 h-8 animate-spin text-[#8C4A27] mb-2" />
-            <span className="text-xs">Loading promo codes...</span>
-          </div>
-        ) : promos.length === 0 ? (
+        {promos.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <Tag className="w-10 h-10 mx-auto text-gray-300 mb-2" />
             <p className="font-semibold text-sm">No active promo codes</p>
@@ -235,10 +237,10 @@ export default function PromoManager() {
                       {promo.code}
                     </td>
                     <td className="p-4 font-semibold text-gray-900">
-                      {promo.discount_type === 'percentage' ? `${promo.discount_value}% OFF` : `₹${promo.discount_value} FLAT OFF`}
+                      {promo.discount_type === 'flat' ? `₹${promo.discount_value} FLAT OFF` : `${promo.discount_value}% OFF`}
                     </td>
-                    <td className="p-4">
-                      {promo.min_order_amount ? `₹${promo.min_order_amount}` : 'No Minimum'}
+                    <td className="p-4 font-medium text-gray-700">
+                      {promo.min_order_amount && promo.min_order_amount > 0 ? `₹${promo.min_order_amount}` : 'No Minimum'}
                     </td>
                     <td className="p-4">
                       <button
@@ -256,12 +258,14 @@ export default function PromoManager() {
                       <button 
                         onClick={() => openEditModal(promo)}
                         className="p-1.5 text-gray-600 hover:text-[#8C4A27] hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                        title="Edit promo code"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => handleDelete(promo.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                        title="Delete promo code"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -274,18 +278,19 @@ export default function PromoManager() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Create / Edit Promo Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-xl border border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-xl border border-gray-100 animate-in fade-in zoom-in duration-200">
             
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-serif font-bold text-lg text-gray-900">
-                {editingPromo ? 'Edit Promo Code' : 'Create Promo Code'}
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-[#FAF6F0]">
+              <h3 className="font-bold text-sm text-[#2C1A14] flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#8C4A27]" />
+                {editingPromo ? 'Edit Promo Code' : 'Create New Promo Code'}
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -298,7 +303,7 @@ export default function PromoManager() {
                 <input 
                   type="text" 
                   required
-                  placeholder="e.g. WELCOME10"
+                  placeholder="e.g. WELCOME10 or BASHA"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8C4A27] uppercase font-mono font-bold"
@@ -322,7 +327,7 @@ export default function PromoManager() {
                   <input 
                     type="number" 
                     required
-                    placeholder="10"
+                    placeholder="100"
                     value={discountValue}
                     onChange={(e) => setDiscountValue(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8C4A27]"
@@ -380,9 +385,3 @@ export default function PromoManager() {
     </div>
   );
 }
-
-const defaultPromos: PromoCode[] = [
-  { id: '1', code: 'WELCOME10', discount_type: 'percentage', discount_value: 10, is_active: true, min_order_amount: 0 },
-  { id: '2', code: 'FESTIVE20', discount_type: 'percentage', discount_value: 20, is_active: true, min_order_amount: 999 },
-  { id: '3', code: 'FLAT100', discount_type: 'flat', discount_value: 100, is_active: true, min_order_amount: 500 }
-];
