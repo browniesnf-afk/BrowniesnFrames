@@ -363,14 +363,23 @@ export default function CustomerAccount() {
                         </div>
 
                         <div className="space-y-1">
-                          <h3 className="font-bold text-sm text-[#2C1A14] leading-tight">
-                            {
-                              order.shipping_address?.cart_items?.[0]?.title ||
-                              (order.items_summary && order.items_summary !== 'Custom Gift Order' 
-                                ? order.items_summary 
-                                : 'Belgian Chocolate Brownie Box')
-                            }
-                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-sm text-[#2C1A14] leading-tight">
+                              {
+                                order.shipping_address?.cart_items?.[0]?.title ||
+                                (order.items_summary && order.items_summary !== 'Custom Gift Order' 
+                                  ? order.items_summary 
+                                  : 'Belgian Chocolate Brownie Box')
+                              }
+                            </h3>
+
+                            {/* Customized Badge */}
+                            {(order.shipping_address?.cart_items?.some((i: any) => i.custom_images?.length > 0 || i.custom_text || i.is_customizable)) && (
+                              <span className="bg-amber-100 text-[#8C4A27] border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
+                                <Sparkles className="w-3 h-3 text-[#8C4A27]" /> Customized
+                              </span>
+                            )}
+                          </div>
 
                           <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                             {order.shipping_address?.cart_items?.[0]?.size && (
@@ -482,31 +491,80 @@ export default function CustomerAccount() {
                           </h4>
 
                           {order.shipping_address?.cart_items && order.shipping_address.cart_items.length > 0 ? (
-                            <div className="divide-y divide-gray-100 rounded-xl border border-gray-200/80 bg-white p-3 space-y-2">
-                              {order.shipping_address.cart_items.map((item: any, idx: number) => (
-                                <div key={idx} className="flex items-center justify-between gap-3 pt-2 first:pt-0">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 shrink-0">
-                                      <img 
-                                        src={item.image || '/images/home_brownies.jpg'} 
-                                        alt={item.title} 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                      />
+                            <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200/80 bg-white p-3.5 space-y-3 shadow-2xs">
+                              {order.shipping_address.cart_items.map((item: any, idx: number) => {
+                                const isItemCustomized = item.custom_images?.length > 0 || item.custom_text || item.is_customizable;
+                                return (
+                                  <div key={idx} className="pt-3 first:pt-0 space-y-2">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden border border-gray-200 shrink-0 shadow-2xs">
+                                          <img 
+                                            src={item.image || '/images/home_brownies.jpg'} 
+                                            alt={item.title} 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs font-bold text-[#2C1A14]">{item.title}</span>
+                                            {isItemCustomized && (
+                                              <span className="bg-amber-100 text-[#8C4A27] border border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-extrabold inline-flex items-center gap-1">
+                                                <Sparkles className="w-2.5 h-2.5" /> Customized
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            {item.size && (
+                                              <span className="text-[10px] bg-[#8C4A27]/10 text-[#8C4A27] px-2 py-0.5 rounded font-semibold inline-block">
+                                                {item.size}
+                                              </span>
+                                            )}
+                                            <span className="text-[11px] text-gray-500 font-medium">Qty: {item.quantity} × ₹{item.price}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <span className="text-xs font-extrabold text-[#2C1A14]">₹{item.price * item.quantity}</span>
                                     </div>
-                                    <div>
-                                      <span className="text-xs font-bold text-[#2C1A14] block">{item.title}</span>
-                                      {item.size && (
-                                        <span className="text-[10px] bg-[#8C4A27]/10 text-[#8C4A27] px-2 py-0.5 rounded font-semibold inline-block">
-                                          {item.size}
+
+                                    {/* Uploaded Photos (Larger & Clearer) */}
+                                    {item.custom_images && item.custom_images.length > 0 && (
+                                      <div className="p-3 bg-[#FAF6F0] rounded-xl border border-[#8C4A27]/25 space-y-1.5 ml-14">
+                                        <span className="text-[10px] font-extrabold text-[#8C4A27] uppercase tracking-wider flex items-center gap-1">
+                                          <Sparkles className="w-3 h-3" /> Uploaded Photo(s) for Printing ({item.custom_images.length})
                                         </span>
-                                      )}
-                                      <span className="text-[11px] text-gray-500 block">Qty: {item.quantity} × ₹{item.price}</span>
-                                    </div>
+                                        <div className="flex flex-wrap gap-2.5 pt-1">
+                                          {item.custom_images.map((imgUrl: string, i: number) => (
+                                            <a 
+                                              key={i} 
+                                              href={imgUrl} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer" 
+                                              className="group relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-[#8C4A27]/30 shadow-2xs hover:border-[#8C4A27] transition-all"
+                                            >
+                                              <img src={imgUrl} alt={`Uploaded photo ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold transition-opacity">
+                                                View Full
+                                              </div>
+                                            </a>
+                                          ))}
+                                        </div>
+                                        <span className="text-[10px] text-gray-400 block pt-0.5">Click photo to view or download full high-res image.</span>
+                                      </div>
+                                    )}
+
+                                    {/* Custom Text / Message */}
+                                    {item.custom_text && (
+                                      <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-200/80 text-xs ml-14">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase block">Custom Text to Print:</span>
+                                        <p className="font-extrabold text-[#2C1A14] text-xs sm:text-sm mt-0.5">"{item.custom_text}"</p>
+                                      </div>
+                                    )}
                                   </div>
-                                  <span className="text-xs font-bold text-[#2C1A14]">₹{item.price * item.quantity}</span>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ) : (
                             <div className="p-3 bg-white rounded-xl border border-gray-200 text-xs text-[#2C1A14] font-medium flex items-center gap-2">
