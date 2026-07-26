@@ -27,6 +27,7 @@ interface Product {
   badge?: string | null;
   images: string[];
   sizes?: string[];
+  is_customizable?: boolean;
   created_at?: string;
 }
 
@@ -51,7 +52,8 @@ export default function ProductsManager() {
     category: 'brownies',
     badge: '',
     images: [] as string[],
-    sizes: [] as string[]
+    sizes: [] as string[],
+    is_customizable: false
   });
   const [newSizeInput, setNewSizeInput] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -284,7 +286,8 @@ export default function ProductsManager() {
       category: product.category,
       badge: product.badge || '',
       images: product.images || [],
-      sizes: product.sizes || (product.category === 'frames' ? DEFAULT_FRAME_SIZES : [])
+      sizes: product.sizes || (product.category === 'frames' ? DEFAULT_FRAME_SIZES : []),
+      is_customizable: product.is_customizable ?? (product.category === 'frames')
     });
     setIsModalOpen(true);
   };
@@ -298,7 +301,8 @@ export default function ProductsManager() {
       category: 'brownies',
       badge: '',
       images: [],
-      sizes: []
+      sizes: [],
+      is_customizable: false
     });
     setNewSizeInput('');
     setError(null);
@@ -578,7 +582,7 @@ export default function ProductsManager() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block font-medium text-gray-700 mb-1">Stock Quantity</label>
                   <input 
@@ -590,7 +594,7 @@ export default function ProductsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-gray-700 mb-1">Badge Tag (Optional)</label>
+                  <label className="block font-medium text-gray-700 mb-1">Badge Tag</label>
                   <select 
                     value={formData.badge}
                     onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
@@ -599,6 +603,17 @@ export default function ProductsManager() {
                     <option value="">None</option>
                     <option value="BESTSELLER">BESTSELLER</option>
                     <option value="NEW">NEW</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">Customizable</label>
+                  <select 
+                    value={formData.is_customizable ? 'customized' : 'standard'}
+                    onChange={(e) => setFormData({ ...formData, is_customizable: e.target.value === 'customized' })}
+                    className="w-full p-2.5 bg-amber-50/80 border border-amber-300 rounded-lg font-bold text-[#8C4A27] focus:outline-none focus:border-[#8C4A27]"
+                  >
+                    <option value="customized">Customized (Yes)</option>
+                    <option value="standard">Non-Customized (No)</option>
                   </select>
                 </div>
               </div>
