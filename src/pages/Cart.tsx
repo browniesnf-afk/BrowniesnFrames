@@ -88,84 +88,115 @@ export default function Cart() {
             {cart.map(item => (
               <div 
                 key={`${item.id}-${item.size || ''}`} 
-                className="bg-white rounded-3xl p-4 shadow-2xs border border-gray-100/80 flex items-start gap-4 relative group"
+                className="bg-white rounded-3xl p-4 shadow-2xs border border-gray-100/80 flex items-start gap-3.5 relative group"
               >
-                {/* Item Image & Change Photo Action */}
-                <div className="relative shrink-0 flex flex-col items-center gap-1.5">
+                {/* LEFT SIDE: Actual PRODUCT image (e.g., frame design) */}
+                <div className="shrink-0">
                   <img 
-                    src={item.custom_images?.[0] || item.image} 
+                    src={item.image || '/images/home_frames.jpg'} 
                     alt={item.title} 
-                    className="w-24 h-24 rounded-2xl object-cover bg-[#FAF6F0] border border-gray-100 shadow-2xs" 
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-[#FAF6F0] border border-gray-100 shadow-2xs" 
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/images/home_frames.jpg'; }}
                   />
-                  {item.custom_images && item.custom_images.length > 1 && (
-                    <span className="absolute top-1 right-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-                      +{item.custom_images.length - 1} photos
-                    </span>
-                  )}
-
-                  {(item.custom_images?.length || item.is_customizable) && (
-                    <label className="text-[10px] font-bold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200/80 transition-colors shadow-2xs">
-                      <Camera className="w-3 h-3 text-[#8C4A27]" />
-                      <span>Change Photo</span>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        multiple 
-                        onChange={(e) => handleReuploadPhoto(item.id, item.size, e)} 
-                        className="hidden" 
-                      />
-                    </label>
-                  )}
                 </div>
 
-                {/* Item Info Column */}
-                <div className="flex-1 flex flex-col justify-between self-stretch pr-6">
+                {/* RIGHT SIDE: Product Info + Customization Details */}
+                <div className="flex-1 flex flex-col justify-between min-w-0 pr-7">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    {/* Product Name & Customized Badge */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                       <h3 className="font-bold text-sm sm:text-base text-[#2C1A14] leading-snug">
                         {item.title}
                       </h3>
                       {(item.custom_images?.length || item.custom_text || item.is_customizable) && (
-                        <span className="bg-amber-100 text-[#8C4A27] border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
-                          <Sparkles className="w-3 h-3 text-[#8C4A27]" /> Customized
+                        <span className="bg-amber-100 text-[#8C4A27] border border-amber-300/80 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
+                          <Sparkles className="w-2.5 h-2.5 text-[#8C4A27]" /> Customized
                         </span>
                       )}
                     </div>
 
-                    <p className="text-xs text-gray-400 font-medium mb-1">
+                    <p className="text-[11px] text-gray-400 font-medium mb-1.5">
                       {item.category || 'Custom Gift Hamper'}
                       {item.size ? ` • ${item.size}` : ''}
                     </p>
 
-                    {item.custom_text && (
-                      <div className="my-1.5 p-2 bg-[#FAF6F0] rounded-xl border border-[#8C4A27]/20 text-xs">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase block">Custom Text / Message:</span>
-                        <span className="font-extrabold text-[#2C1A14]">"{item.custom_text}"</span>
+                    {/* Customization Details Block (Uploaded Photo + Change Photo Button + Custom Text) */}
+                    {((item.custom_images && item.custom_images.length > 0) || item.custom_text) && (
+                      <div className="p-2.5 bg-[#FAF6F0] rounded-xl border border-[#8C4A27]/20 space-y-2 text-xs mb-2.5">
+                        
+                        {/* Customer Uploaded Photo Row & Change Photo Button */}
+                        {item.custom_images && item.custom_images.length > 0 && (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <div className="relative shrink-0">
+                                <img 
+                                  src={item.custom_images[0]} 
+                                  alt="Customer upload preview" 
+                                  className="w-11 h-11 rounded-lg object-cover border border-[#8C4A27]/30 shadow-2xs" 
+                                />
+                                {item.custom_images.length > 1 && (
+                                  <span className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                                    +{item.custom_images.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px]">
+                                <span className="font-bold text-[#8C4A27] uppercase block">Your Uploaded Photo</span>
+                                <span className="text-gray-400">Ready for high-res print</span>
+                              </div>
+                            </div>
+
+                            {/* Change Photo Button on the Right */}
+                            <label className="text-[10px] font-extrabold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-white hover:bg-amber-50 px-2.5 py-1.5 rounded-lg border border-[#8C4A27]/25 transition-colors shadow-2xs shrink-0">
+                              <Camera className="w-3 h-3 text-[#8C4A27]" />
+                              <span>Change Photo</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple 
+                                onChange={(e) => handleReuploadPhoto(item.id, item.size, e)} 
+                                className="hidden" 
+                              />
+                            </label>
+                          </div>
+                        )}
+
+                        {/* Custom Text Row */}
+                        {item.custom_text && (
+                          <div className="text-xs pt-1 border-t border-[#8C4A27]/10">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase block">Custom Printed Text:</span>
+                            <span className="font-extrabold text-[#2C1A14]">"{item.custom_text}"</span>
+                          </div>
+                        )}
+
                       </div>
                     )}
 
-                    <span className="font-sans font-black text-lg text-[#2D0D15] tracking-tight">
-                      ₹{item.price}
-                    </span>
-                  </div>
+                    {/* Price & Quantity Controls */}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="font-sans font-black text-base sm:text-lg text-[#2D0D15] tracking-tight">
+                        ₹{item.price}
+                      </span>
 
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-3 pt-2">
-                    <button 
-                      onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
-                      className="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="font-bold text-sm text-gray-900 min-w-4 text-center">
-                      {item.quantity}
-                    </span>
-                    <button 
-                      onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
-                      className="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity - 1, item.size)}
+                          className="w-7 h-7 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="font-bold text-xs text-gray-900 min-w-4 text-center">
+                          {item.quantity}
+                        </span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)}
+                          className="w-7 h-7 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -174,9 +205,9 @@ export default function Cart() {
                   onClick={() => removeFromCart(item.id, item.size)}
                   aria-label="Remove item"
                   title="Remove item"
-                  className="absolute bottom-4 right-4 p-2 text-[#E53935] bg-red-50 hover:bg-red-100/90 rounded-full transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95 flex items-center justify-center border border-red-100"
+                  className="absolute top-4 right-4 p-1.5 text-[#E53935] bg-red-50 hover:bg-red-100/90 rounded-full transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95 flex items-center justify-center border border-red-100"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
