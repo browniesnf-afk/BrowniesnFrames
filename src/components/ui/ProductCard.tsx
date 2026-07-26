@@ -33,21 +33,16 @@ export const ProductCard = ({
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
-    addToCart({
-      id: id,
-      title: title,
-      category: category || 'Custom Gift Hamper',
-      price: price,
-      image: image,
-      quantity: 1
-    }, e);
+  const handleBuyNowClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(link);
   };
 
   const handleCartIconClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // 1. Add product to cart with fly animation
+    // Quick Add to cart with fly-to-cart animation
     addToCart({
       id: id,
       title: title,
@@ -56,8 +51,6 @@ export const ProductCard = ({
       image: image,
       quantity: 1
     }, e);
-    // 2. Navigate directly to /cart page
-    navigate('/cart');
   };
 
   return (
@@ -121,16 +114,16 @@ export const ProductCard = ({
           {/* Action Buttons */}
           <div className="flex gap-1.5">
             <button 
-              onClick={handleQuickAdd}
-              className="flex-1 bg-white border border-[#8C4A27] text-[#8C4A27] hover:bg-[#F5EAE1] font-medium py-1.5 px-2 rounded-lg transition-colors text-[10px] sm:text-xs text-center truncate cursor-pointer active:scale-95"
+              onClick={handleBuyNowClick}
+              className="flex-1 bg-[#8C4A27] hover:bg-[#733c21] text-white font-bold py-1.5 px-2 rounded-lg transition-all duration-200 text-[10px] sm:text-xs text-center truncate cursor-pointer active:scale-95 shadow-2xs"
             >
-              Add to Cart
+              Buy Now
             </button>
             <button 
               onClick={handleCartIconClick}
-              aria-label="Add product and view cart"
-              title="Go to Cart"
-              className="bg-[#8C4A27] hover:bg-[#733c21] text-white p-1.5 px-2.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+              aria-label="Add to Cart"
+              title="Add to Cart"
+              className="bg-white border border-[#8C4A27] text-[#8C4A27] hover:bg-[#F5EAE1] p-1.5 px-2.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
             >
               <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
