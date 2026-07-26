@@ -52,6 +52,30 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEY = 'browniesnframes_cart';
 const COUPON_KEY = 'browniesnframes_coupon_data';
 
+const sanitizeCartItem = (item: any): CartItem => {
+  if (!item) return item;
+  const knownKeywords = ['frame', 'brownie', 'hamper', 'box', 'gift', 'chocolate', 'biscoff', 'nutella', 'walnut', 'collage', 'wooden', 'memories', 'classic', 'minimal'];
+  const titleLower = (item.title || '').trim().toLowerCase();
+  const hasKeyword = knownKeywords.some(kw => titleLower.includes(kw));
+
+  let realTitle = item.title;
+  let customText = item.custom_text;
+
+  // If title was saved as a customer name or custom text (like "asba" or "inayath")
+  if (!hasKeyword || titleLower === 'asba' || titleLower === 'inayath' || (customText && titleLower === customText.trim().toLowerCase())) {
+    if (!customText && item.title && !hasKeyword) {
+      customText = item.title;
+    }
+    realTitle = item.category?.toLowerCase() === 'brownies' ? 'Belgian Chocolate Brownie' : 'Memories Collage Frame';
+  }
+
+  return {
+    ...item,
+    title: realTitle,
+    custom_text: customText
+  };
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
 
@@ -64,7 +88,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           !(item.id === '1' && item.title === 'Gourmet Brownie Box') &&
           !(item.id === '9' && item.title === 'Curated Birthday Gift Hamper')
         );
-        return cleanCart;
+        return cleanCart.map(sanitizeCartItem);
       }
     } catch (e) {
       console.warn('Failed to load cart from localStorage:', e);
@@ -147,9 +171,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addToCart = (
-    newItem: Omit<CartItem, 'quantity'> & { quantity?: number },
+    rawItem: Omit<CartItem, 'quantity'> & { quantity?: number },
     startElementOrEvent?: React.MouseEvent | HTMLElement | null
   ) => {
+    const newItem = sanitizeCartItem(rawItem);
+
     // 1. Trigger visual fly-to-cart animation
     triggerFlyAnimation(newItem.image, startElementOrEvent);
 
@@ -164,6 +190,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (existingIndex > -1) {
         const updated = [...prevCart];
         updated[existingIndex].quantity += addQty;
+        if (newItem.custom_images) updated[existingIndex].custom_images = newItem.custom_images;
+        if (newItem.custom_text) updated[existingIndex].custom_text = newItem.custom_text;
         return updated;
       } else {
         return [...prevCart, { ...newItem, quantity: addQty }];
