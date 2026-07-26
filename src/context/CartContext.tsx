@@ -42,6 +42,7 @@ interface CartContextType {
   couponCode: string;
   discount: number;
   applyCouponAsync: (code: string) => Promise<{ success: boolean; message?: string }>;
+  updateCustomization: (id: string, size?: string, custom_images?: string[], custom_text?: string) => void;
   removeCoupon: () => void;
   finalTotal: number;
 }
@@ -186,6 +187,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const updateCustomization = (id: string, size?: string, custom_images?: string[], custom_text?: string) => {
+    setCart(prevCart =>
+      prevCart.map(item => {
+        if (item.id === id && item.size === size) {
+          return {
+            ...item,
+            custom_images: custom_images ?? item.custom_images,
+            custom_text: custom_text ?? item.custom_text
+          };
+        }
+        return item;
+      })
+    );
+  };
+
   const clearCart = () => {
     setCart([]);
     setCouponState({ code: '', type: 'percentage', value: 0 });
@@ -300,6 +316,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         couponCode: couponState.code,
         discount,
         applyCouponAsync,
+        updateCustomization,
         removeCoupon,
         finalTotal
       }}

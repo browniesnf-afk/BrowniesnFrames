@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag, Sparkles } from 'lucide-react';
+import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag, Sparkles, Camera } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
@@ -13,6 +13,7 @@ export default function Cart() {
     couponCode, 
     discount, 
     applyCouponAsync, 
+    updateCustomization,
     removeCoupon, 
     finalTotal 
   } = useCart();
@@ -36,6 +37,27 @@ export default function Cart() {
     } else {
       setCouponError(res.message || 'Invalid promo code.');
     }
+  };
+
+  const handleReuploadPhoto = (id: string, size: string | undefined, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files).slice(0, 4);
+    const newImages: string[] = [];
+
+    fileArray.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          newImages.push(reader.result as string);
+          if (newImages.length === fileArray.length) {
+            updateCustomization(id, size, newImages);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   return (
@@ -68,17 +90,31 @@ export default function Cart() {
                 key={`${item.id}-${item.size || ''}`} 
                 className="bg-white rounded-3xl p-4 shadow-2xs border border-gray-100/80 flex items-start gap-4 relative group"
               >
-                {/* Item Image */}
-                <div className="relative shrink-0">
+                {/* Item Image & Change Photo Action */}
+                <div className="relative shrink-0 flex flex-col items-center gap-1.5">
                   <img 
                     src={item.custom_images?.[0] || item.image} 
                     alt={item.title} 
                     className="w-24 h-24 rounded-2xl object-cover bg-[#FAF6F0] border border-gray-100 shadow-2xs" 
                   />
                   {item.custom_images && item.custom_images.length > 1 && (
-                    <span className="absolute bottom-1 right-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                    <span className="absolute top-1 right-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
                       +{item.custom_images.length - 1} photos
                     </span>
+                  )}
+
+                  {(item.custom_images?.length || item.is_customizable) && (
+                    <label className="text-[10px] font-bold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200/80 transition-colors shadow-2xs">
+                      <Camera className="w-3 h-3 text-[#8C4A27]" />
+                      <span>Change Photo</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        multiple 
+                        onChange={(e) => handleReuploadPhoto(item.id, item.size, e)} 
+                        className="hidden" 
+                      />
+                    </label>
                   )}
                 </div>
 
