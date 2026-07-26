@@ -126,13 +126,13 @@ export default function Cart() {
                         
                         {/* Customer Uploaded Photo Row & Change Photo Button */}
                         {item.custom_images && item.custom_images.length > 0 && (
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between gap-3 p-1.5 bg-white/70 rounded-lg border border-[#8C4A27]/15">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               <div className="relative shrink-0">
                                 <img 
                                   src={item.custom_images[0]} 
                                   alt="Customer upload preview" 
-                                  className="w-11 h-11 rounded-lg object-cover border border-[#8C4A27]/30 shadow-2xs" 
+                                  className="w-12 h-12 rounded-lg object-cover border border-[#8C4A27]/20 shadow-2xs" 
                                 />
                                 {item.custom_images.length > 1 && (
                                   <span className="absolute -bottom-1 -right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
@@ -140,14 +140,14 @@ export default function Cart() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[10px]">
-                                <span className="font-bold text-[#8C4A27] uppercase block">Your Uploaded Photo</span>
-                                <span className="text-gray-400">Ready for high-res print</span>
+                              <div className="min-w-0 leading-tight">
+                                <span className="font-extrabold text-[#8C4A27] text-xs block truncate">Uploaded Photo</span>
+                                <span className="text-[10px] text-gray-400 block truncate">Ready for print</span>
                               </div>
                             </div>
 
-                            {/* Change Photo Button on the Right */}
-                            <label className="text-[10px] font-extrabold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-white hover:bg-amber-50 px-2.5 py-1.5 rounded-lg border border-[#8C4A27]/25 transition-colors shadow-2xs shrink-0">
+                            {/* Change Photo Button */}
+                            <label className="text-[10px] font-extrabold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-amber-50/80 hover:bg-amber-100 px-2.5 py-1.5 rounded-md border border-[#8C4A27]/25 transition-colors shadow-2xs shrink-0">
                               <Camera className="w-3 h-3 text-[#8C4A27]" />
                               <span>Change Photo</span>
                               <input 
@@ -163,9 +163,9 @@ export default function Cart() {
 
                         {/* Custom Text Row */}
                         {item.custom_text && (
-                          <div className="text-xs pt-1 border-t border-[#8C4A27]/10">
-                            <span className="text-[9px] font-bold text-gray-400 uppercase block">Custom Printed Text:</span>
-                            <span className="font-extrabold text-[#2C1A14]">"{item.custom_text}"</span>
+                          <div className="text-xs pt-1.5 border-t border-[#8C4A27]/10">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">CUSTOM PRINTED TEXT:</span>
+                            <span className="font-extrabold text-[#2C1A14] text-xs sm:text-sm block mt-0.5">"{item.custom_text}"</span>
                           </div>
                         )}
 
