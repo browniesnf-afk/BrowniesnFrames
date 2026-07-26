@@ -48,12 +48,8 @@ export default function MemoriesCollageFrame() {
   };
 
   const handleAddToCart = (e?: React.MouseEvent) => {
-    if (customImages.length === 0) {
-      setCustomError('Please upload at least 1 photo for your custom frame.');
-      return;
-    }
-    if (!customText.trim()) {
-      setCustomError('Please enter your custom text or message for the print.');
+    if (customImages.length === 0 || !customText.trim()) {
+      setCustomError('Please upload your photo and add custom text before adding to cart.');
       return;
     }
 
@@ -72,12 +68,8 @@ export default function MemoriesCollageFrame() {
   };
 
   const handleBuyNow = (e?: React.MouseEvent) => {
-    if (customImages.length === 0) {
-      setCustomError('Please upload at least 1 photo for your custom frame.');
-      return;
-    }
-    if (!customText.trim()) {
-      setCustomError('Please enter your custom text or message for the print.');
+    if (customImages.length === 0 || !customText.trim()) {
+      setCustomError('Please upload your photo and add custom text before adding to cart.');
       return;
     }
 

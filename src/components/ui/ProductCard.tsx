@@ -42,6 +42,14 @@ export const ProductCard = ({
   const handleCartIconClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // If product is a Frame or Customizable item, redirect to product detail page for required photo upload & custom text
+    const isFrameOrCustom = category?.toLowerCase() === 'frames' || title.toLowerCase().includes('frame') || title.toLowerCase().includes('collage');
+    if (isFrameOrCustom) {
+      navigate(link);
+      return;
+    }
+
     // Quick Add to cart with fly-to-cart animation
     addToCart({
       id: id,

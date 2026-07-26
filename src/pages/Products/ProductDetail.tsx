@@ -266,12 +266,8 @@ export default function ProductDetail() {
     const isCustomizable = product.is_customizable === true || (product.is_customizable !== false && (product.category === 'frames' || product.category === 'Frames'));
 
     if (isCustomizable) {
-      if (customImages.length === 0) {
-        setCustomError('Please upload at least 1 photo for your custom product.');
-        return;
-      }
-      if (!customText.trim()) {
-        setCustomError('Please enter your custom text/message for the print.');
+      if (customImages.length === 0 || !customText.trim()) {
+        setCustomError('Please upload your photo and add custom text before adding to cart.');
         return;
       }
     }
@@ -297,12 +293,8 @@ export default function ProductDetail() {
     const isCustomizable = product.is_customizable === true || (product.is_customizable !== false && (product.category === 'frames' || product.category === 'Frames'));
 
     if (isCustomizable) {
-      if (customImages.length === 0) {
-        setCustomError('Please upload at least 1 photo for your custom product.');
-        return;
-      }
-      if (!customText.trim()) {
-        setCustomError('Please enter your custom text/message for the print.');
+      if (customImages.length === 0 || !customText.trim()) {
+        setCustomError('Please upload your photo and add custom text before adding to cart.');
         return;
       }
     }

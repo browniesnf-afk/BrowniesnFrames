@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag } from 'lucide-react';
+import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
@@ -69,22 +69,45 @@ export default function Cart() {
                 className="bg-white rounded-3xl p-4 shadow-2xs border border-gray-100/80 flex items-start gap-4 relative group"
               >
                 {/* Item Image */}
-                <img 
-                  src={item.image} 
-                  alt={item.title} 
-                  className="w-24 h-24 rounded-2xl object-cover shrink-0 bg-[#FAF6F0] border border-gray-100" 
-                />
+                <div className="relative shrink-0">
+                  <img 
+                    src={item.custom_images?.[0] || item.image} 
+                    alt={item.title} 
+                    className="w-24 h-24 rounded-2xl object-cover bg-[#FAF6F0] border border-gray-100 shadow-2xs" 
+                  />
+                  {item.custom_images && item.custom_images.length > 1 && (
+                    <span className="absolute bottom-1 right-1 bg-black/75 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                      +{item.custom_images.length - 1} photos
+                    </span>
+                  )}
+                </div>
 
                 {/* Item Info Column */}
                 <div className="flex-1 flex flex-col justify-between self-stretch pr-6">
                   <div>
-                    <h3 className="font-bold text-sm sm:text-base text-[#2C1A14] leading-snug">
-                      {item.title}
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <h3 className="font-bold text-sm sm:text-base text-[#2C1A14] leading-snug">
+                        {item.title}
+                      </h3>
+                      {(item.custom_images?.length || item.custom_text || item.is_customizable) && (
+                        <span className="bg-amber-100 text-[#8C4A27] border border-amber-300 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
+                          <Sparkles className="w-3 h-3 text-[#8C4A27]" /> Customized
+                        </span>
+                      )}
+                    </div>
+
                     <p className="text-xs text-gray-400 font-medium mb-1">
                       {item.category || 'Custom Gift Hamper'}
                       {item.size ? ` • ${item.size}` : ''}
                     </p>
+
+                    {item.custom_text && (
+                      <div className="my-1.5 p-2 bg-[#FAF6F0] rounded-xl border border-[#8C4A27]/20 text-xs">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase block">Custom Text / Message:</span>
+                        <span className="font-extrabold text-[#2C1A14]">"{item.custom_text}"</span>
+                      </div>
+                    )}
+
                     <span className="font-sans font-black text-lg text-[#2D0D15] tracking-tight">
                       ₹{item.price}
                     </span>
