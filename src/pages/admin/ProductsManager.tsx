@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
+import { cn } from '../../lib/utils';
 import { 
   Plus, 
   Search, 
@@ -13,7 +14,8 @@ import {
   PackageCheck,
   Database,
   Filter,
-  Tag
+  Tag,
+  Sparkles
 } from 'lucide-react';
 
 interface Product {
@@ -197,7 +199,7 @@ export default function ProductsManager() {
 
     const productPayload = {
       title: formData.title,
-      slug: formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      slug: editingProduct ? editingProduct.slug : formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       description: formData.description,
       price: parseFloat(formData.price),
       stock: parseInt(formData.stock),
@@ -219,14 +221,8 @@ export default function ProductsManager() {
           .eq('id', editingProduct.id);
 
         if (error) {
-          console.warn('Initial product update error, retrying without extended columns:', error.message);
-          // If metadata or optional columns are missing, retry with core fields only
-          const { metadata, is_active, is_featured, ...corePayload }: any = productPayload;
-          const { error: retryErr } = await supabase
-            .from('products')
-            .update(corePayload)
-            .eq('id', editingProduct.id);
-          if (retryErr) throw retryErr;
+          console.error('Product update error in Supabase:', error);
+          throw error;
         }
         setSuccessMsg('Product updated successfully in Supabase!');
       } else {
@@ -235,12 +231,8 @@ export default function ProductsManager() {
           .insert([productPayload]);
 
         if (error) {
-          console.warn('Initial product insert error, retrying without extended columns:', error.message);
-          const { metadata, is_active, is_featured, ...corePayload }: any = productPayload;
-          const { error: retryErr } = await supabase
-            .from('products')
-            .insert([corePayload]);
-          if (retryErr) throw retryErr;
+          console.error('Product insert error in Supabase:', error);
+          throw error;
         }
         setSuccessMsg('Product created successfully in Supabase!');
       }
@@ -586,7 +578,7 @@ export default function ProductsManager() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-medium text-gray-700 mb-1">Stock Quantity</label>
                   <input 
@@ -609,16 +601,47 @@ export default function ProductsManager() {
                     <option value="NEW">NEW</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block font-medium text-gray-700 mb-1">Customizable</label>
-                  <select 
-                    value={formData.is_customizable ? 'customized' : 'standard'}
-                    onChange={(e) => setFormData({ ...formData, is_customizable: e.target.value === 'customized' })}
-                    className="w-full p-2.5 bg-amber-50/80 border border-amber-300 rounded-lg font-bold text-[#8C4A27] focus:outline-none focus:border-[#8C4A27]"
+              </div>
+
+              {/* Customizable Product Setting Cards */}
+              <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200/80 space-y-2">
+                <label className="block font-bold text-gray-800 text-xs flex items-center justify-between">
+                  <span>Customizable Product Setting</span>
+                  <span className="text-[10px] text-[#8C4A27] font-semibold">Shows photo/text fields on detail page</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, is_customizable: true })}
+                    className={cn(
+                      "p-2.5 rounded-lg border flex flex-col items-start gap-0.5 transition-all text-left cursor-pointer",
+                      formData.is_customizable 
+                        ? "bg-white border-[#8C4A27] text-[#8C4A27] ring-2 ring-[#8C4A27]/20 shadow-2xs font-extrabold" 
+                        : "bg-white/60 border-gray-200 text-gray-500 hover:bg-white font-medium"
+                    )}
                   >
-                    <option value="customized">Customized (Yes)</option>
-                    <option value="standard">Non-Customized (No)</option>
-                  </select>
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#8C4A27]" />
+                      <span className="text-xs">Customized (Yes)</span>
+                    </div>
+                    <span className="text-[10px] opacity-75">Customer uploads photo & text</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, is_customizable: false })}
+                    className={cn(
+                      "p-2.5 rounded-lg border flex flex-col items-start gap-0.5 transition-all text-left cursor-pointer",
+                      !formData.is_customizable 
+                        ? "bg-white border-gray-800 text-gray-900 ring-2 ring-gray-400/20 shadow-2xs font-extrabold" 
+                        : "bg-white/60 border-gray-200 text-gray-500 hover:bg-white font-medium"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">Non-Customized (No)</span>
+                    </div>
+                    <span className="text-[10px] opacity-75">Standard order without uploads</span>
+                  </button>
                 </div>
               </div>
 
