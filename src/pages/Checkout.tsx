@@ -47,19 +47,27 @@ export default function Checkout() {
     setError(null);
 
     try {
+      console.log('🛒 starting handlePlaceOrder...');
       // 1. Check/Lookup customer ID
       let customerId: string | null = null;
       try {
-        const { data: custData } = await supabase
+        console.log('🔍 Checking existing customer phone:', phone);
+        const { data: custData, error: custError } = await supabase
           .from('customers')
           .select('id')
           .eq('phone', phone)
           .maybeSingle();
 
+        if (custError) {
+          console.warn('Customer query warning:', custError);
+        }
+
         if (custData?.id) {
+          console.log('✅ Found existing customer ID:', custData.id);
           customerId = custData.id;
         } else {
-          const { data: newCust } = await supabase
+          console.log('➕ Customer not found, creating new customer record...');
+          const { data: newCust, error: createCustError } = await supabase
             .from('customers')
             .insert([{
               full_name: fullName,
@@ -69,11 +77,20 @@ export default function Checkout() {
             .select('id')
             .maybeSingle();
 
-          if (newCust?.id) customerId = newCust.id;
+          if (createCustError) {
+            console.error('Customer insert failed:', createCustError);
+          }
+          if (newCust?.id) {
+            console.log('✅ Created new customer ID:', newCust.id);
+            customerId = newCust.id;
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('Customer lookup block error:', e);
+      }
 
       // 2. Prepare Order Payload
+      console.log('📦 Preparing order payload...');
       const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
       const itemsSummary = cart.map(i => `${i.title} (${i.size || 'Std'}) x${i.quantity}`).join(', ');
       
@@ -117,14 +134,20 @@ export default function Checkout() {
         dbPayload.customer_id = customerId;
       }
 
+      // Calculate payload size to debug if huge base64 files are present
+      const payloadString = JSON.stringify(dbPayload);
+      console.log('📤 Sending order payload to Supabase. Size:', (payloadString.length / 1024).toFixed(2), 'KB');
+
       // 3. Insert into Supabase orders table
+      console.log('⚡ Inserting order into Supabase...');
       const { data: insertResult, error: insertError } = await supabase
         .from('orders')
         .insert([dbPayload])
         .select();
 
+      console.log('📥 Supabase insertion result received.');
       if (insertError) {
-        console.error('Supabase order insert error:', insertError);
+        console.error('❌ Supabase order insert error:', insertError);
         if (insertError.code === '42501') {
           setError('Unable to place order — database RLS policy block. Please contact the store admin.');
         } else {
