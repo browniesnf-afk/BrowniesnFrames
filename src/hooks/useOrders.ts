@@ -172,20 +172,6 @@ export function useOrders() {
   useEffect(() => {
     fetchOrders();
 
-    const formatOrder = (o: any): OrderItem => {
-      const addr = o.shipping_address || {};
-      return {
-        id: o.id,
-        customer_name: addr.full_name || o.customer_name || 'Customer',
-        customer_phone: addr.phone || o.customer_phone || 'N/A',
-        total_amount: o.total_amount,
-        status: o.status || 'Pending',
-        created_at: o.created_at,
-        items_summary: o.items_summary || addr.items_summary || 'Order items',
-        shipping_address: addr
-      };
-    };
-
     // Real-time subscription to orders table changes via Supabase Realtime
     const channel = supabase
       .channel('orders_admin_realtime_channel')
@@ -194,18 +180,7 @@ export function useOrders() {
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
           console.log('⚡ Realtime order change received in Admin:', payload);
-          if (payload.eventType === 'INSERT') {
-            const formatted = formatOrder(payload.new);
-            setOrders(prev => {
-              if (prev.some(o => o.id === formatted.id)) return prev;
-              return [formatted, ...prev];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const formatted = formatOrder(payload.new);
-            setOrders(prev => prev.map(o => o.id === formatted.id ? formatted : o));
-          } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
-          }
+          fetchOrders();
         }
       )
       .subscribe();

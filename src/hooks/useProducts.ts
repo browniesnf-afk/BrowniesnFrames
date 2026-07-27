@@ -62,65 +62,6 @@ export function useProducts(categoryFilter?: string) {
 
   useEffect(() => {
     fetchProducts();
-
-    // Subscribe to products table realtime events
-    const channel = supabase
-      .channel(`products_realtime_customer_${categoryFilter || 'all'}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('⚡ Realtime product update:', payload);
-          
-          if (payload.eventType === 'INSERT' && payload.new) {
-            const formatted: ProductItem = {
-              id: payload.new.id,
-              title: payload.new.title,
-              description: payload.new.description || '',
-              price: payload.new.price,
-              image: payload.new.images?.[0] || '/images/home_brownies.jpg',
-              rating: payload.new.rating || 5,
-              reviewsCount: payload.new.reviews_count || 100,
-              badge: payload.new.badge || null,
-              link: `/products/${payload.new.slug || payload.new.id}`,
-              category: payload.new.category
-            };
-            
-            if (!categoryFilter || formatted.category === categoryFilter) {
-              setProducts(prev => {
-                if (prev.some(p => p.id === formatted.id)) return prev;
-                return [formatted, ...prev];
-              });
-            }
-          } else if (payload.eventType === 'UPDATE' && payload.new) {
-            const formatted: ProductItem = {
-              id: payload.new.id,
-              title: payload.new.title,
-              description: payload.new.description || '',
-              price: payload.new.price,
-              image: payload.new.images?.[0] || '/images/home_brownies.jpg',
-              rating: payload.new.rating || 5,
-              reviewsCount: payload.new.reviews_count || 100,
-              badge: payload.new.badge || null,
-              link: `/products/${payload.new.slug || payload.new.id}`,
-              category: payload.new.category
-            };
-
-            if (!categoryFilter || formatted.category === categoryFilter) {
-              setProducts(prev => prev.map(p => p.id === formatted.id ? formatted : p));
-            } else {
-              setProducts(prev => prev.filter(p => p.id !== formatted.id));
-            }
-          } else if (payload.eventType === 'DELETE' && payload.old) {
-            setProducts(prev => prev.filter(p => p.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [categoryFilter]);
 
   return { products, loading, error, refetch: fetchProducts };

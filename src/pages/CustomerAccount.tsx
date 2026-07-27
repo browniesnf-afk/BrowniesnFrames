@@ -77,27 +77,9 @@ export default function CustomerAccount() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
-          (payload) => {
-            console.log('⚡ Realtime status update for customer order received:', payload);
-            if (payload.eventType === 'UPDATE') {
-              const updatedOrder = payload.new;
-              const addrPhone = updatedOrder.shipping_address?.phone || updatedOrder.customer_phone;
-              if (addrPhone === customer.phone) {
-                setOrders(prev => prev.map(o => o.id === updatedOrder.id ? { ...o, status: updatedOrder.status } : o));
-                
-                // Update local storage too to keep sync
-                try {
-                  const key = `orders_${customer.phone}`;
-                  const stored = JSON.parse(localStorage.getItem(key) || '[]');
-                  const updated = stored.map((lo: any) => 
-                    lo.id === updatedOrder.id ? { ...lo, status: updatedOrder.status } : lo
-                  );
-                  localStorage.setItem(key, JSON.stringify(updated));
-                } catch (e) {}
-              }
-            } else {
-              fetchCustomerOrders(customer.phone);
-            }
+          () => {
+            console.log('⚡ Realtime status update for customer order received!');
+            fetchCustomerOrders(customer.phone);
           }
         )
         .subscribe();

@@ -103,18 +103,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }>(() => {
     try {
       const saved = localStorage.getItem(COUPON_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return {
-            code: parsed.code || '',
-            type: parsed.type || 'percentage',
-            value: Number(parsed.value ?? 0)
-          };
-        } else if (typeof parsed === 'string') {
-          return { code: parsed, type: 'percentage', value: 0 };
-        }
-      }
+      if (saved) return JSON.parse(saved);
     } catch (e) {}
     return { code: '', type: 'percentage', value: 0 };
   });
@@ -128,56 +117,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [cart]);
 
   useEffect(() => {
-    if (couponState && couponState.code) {
+    if (couponState.code) {
       localStorage.setItem(COUPON_KEY, JSON.stringify(couponState));
     } else {
       localStorage.removeItem(COUPON_KEY);
     }
   }, [couponState]);
-
-  // Real-time subscription to promo_codes table
-  useEffect(() => {
-    const channel = supabase
-      .channel('cart_promo_codes_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'promo_codes' },
-        (payload) => {
-          console.log('⚡ Realtime promo code change in Cart:', payload);
-          const appliedCode = (couponState?.code || '').toUpperCase();
-          if (!appliedCode) return;
-
-          if (payload.eventType === 'DELETE') {
-            const deletedCode = (payload.old?.code || '').toUpperCase();
-            if (deletedCode === appliedCode || payload.old?.id) {
-              removeCoupon();
-              alert(`⚠️ The applied promo code "${appliedCode}" has been removed by the administrator.`);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedCode = payload.new;
-            if (updatedCode && updatedCode.code?.toUpperCase() === appliedCode) {
-              if (updatedCode.is_active === false) {
-                removeCoupon();
-                alert(`⚠️ The applied promo code "${appliedCode}" is now inactive.`);
-              } else {
-                const discVal = Number(updatedCode.discount_value ?? updatedCode.discount_percent ?? updatedCode.value ?? 10);
-                const discType = updatedCode.discount_type || (updatedCode.discount_percent && !updatedCode.discount_value ? 'percentage' : 'flat');
-                setCouponState({
-                  code: updatedCode.code,
-                  type: discType as any,
-                  value: discVal
-                });
-              }
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [couponState?.code]);
 
   const triggerFlyAnimation = (
     imageSrc: string,

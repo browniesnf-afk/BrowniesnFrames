@@ -1,6 +1,6 @@
 const SUPABASE_STORAGE_URL = 'https://rapihhocsnmckogsmokp.supabase.co/storage/v1/object/public';
 
-const CLOUDFLARE_CDN_URL = 'https://browniesnframes-cdn.browniesnf.workers.dev';
+const CLOUDFLARE_CDN_URL = 'https://browniesnframes-cdn.browniesnf.workers.dev/storage/v1/object/public';
 
 /**
  * Routes a Supabase storage image URL through the Cloudflare Worker CDN caching layer.

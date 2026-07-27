@@ -72,33 +72,6 @@ export default function CategoriesManager() {
 
   useEffect(() => {
     fetchCategories();
-
-    // Subscribe to categories table realtime events in admin manager
-    const channel = supabase
-      .channel('categories_admin_realtime_channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'categories' },
-        (payload) => {
-          console.log('⚡ Realtime category update in Admin:', payload);
-          if (payload.eventType === 'INSERT') {
-            setCategories(prev => {
-              const newCat = { ...(payload.new as any), is_active: (payload.new as any).is_active ?? true };
-              if (prev.some(c => c.id === newCat.id)) return prev;
-              return [newCat, ...prev];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setCategories(prev => prev.map(c => c.id === payload.new.id ? { ...(payload.new as any), is_active: (payload.new as any).is_active ?? true } : c));
-          } else if (payload.eventType === 'DELETE') {
-            setCategories(prev => prev.filter(c => c.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // Handle Image Upload

@@ -72,32 +72,6 @@ export function useCategories() {
 
   useEffect(() => {
     fetchCategories();
-
-    // Subscribe to categories table realtime events
-    const channel = supabase
-      .channel('categories_realtime_customer_channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'categories' },
-        (payload) => {
-          console.log('⚡ Realtime category update:', payload);
-          if (payload.eventType === 'INSERT') {
-            setCategories(prev => {
-              if (prev.some(c => c.id === payload.new.id)) return prev;
-              return [...prev, payload.new as CategoryItem];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setCategories(prev => prev.map(c => c.id === payload.new.id ? (payload.new as CategoryItem) : c));
-          } else if (payload.eventType === 'DELETE') {
-            setCategories(prev => prev.filter(c => c.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const activeCategories = categories.filter(c => c.is_active !== false);

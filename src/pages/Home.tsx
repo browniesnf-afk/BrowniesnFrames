@@ -3,6 +3,7 @@ import { ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { useCategories } from '../hooks/useCategories';
 import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from '../components/ui/ProductCard';
+import { toCdnUrl } from '../lib/cdn';
 
 export default function Home() {
   const { activeCategories, loading: loadingCategories } = useCategories();
@@ -65,7 +66,7 @@ export default function Home() {
           {activeCategories.map((category) => {
             const styles = getStyleProps(category.slug);
             const categoryLink = `/categories/${category.slug}`;
-            const displayImage = category.image_url || `/images/home_${category.slug}.jpg`;
+            const displayImage = toCdnUrl(category.image_url) || `/images/home_${category.slug}.jpg`;
 
             return (
               <Link 
