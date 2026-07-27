@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 import { cn } from '../../lib/utils';
+import { compressImage, deleteStorageImage } from '../../lib/imageCompressor';
 import { 
   Plus, 
   Search, 
@@ -100,9 +101,9 @@ export default function ProductsManager() {
         price: p.price,
         stock: p.stock,
         category: p.category,
-        badge: p.badge || null,
+        badge: p.badge,
         images: p.images,
-        sizes: p.sizes || null
+        sizes: p.sizes
       }));
 
       const { error } = await supabase
@@ -120,7 +121,7 @@ export default function ProductsManager() {
     }
   };
 
-  // Multiple Image Upload to Supabase Storage
+  // Multiple Image Upload to Supabase Storage with Automatic Client Compression
   const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -131,14 +132,19 @@ export default function ProductsManager() {
 
     try {
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const rawFile = files[i];
+        // Automatic image compression & resizing to ~200-400KB (max 1200x1200px)
+        const compressedFile = await compressImage(rawFile, 1200, 1200, 0.8);
+
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
         const filePath = `product-images/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('products')
-          .upload(filePath, file);
+          .upload(filePath, compressedFile, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
 
         if (uploadError) throw uploadError;
 
@@ -146,7 +152,9 @@ export default function ProductsManager() {
           .from('products')
           .getPublicUrl(filePath);
 
-        uploadedUrls.push(publicUrlData.publicUrl);
+        if (publicUrlData?.publicUrl) {
+          uploadedUrls.push(publicUrlData.publicUrl);
+        }
       }
 
       setFormData(prev => ({
@@ -161,7 +169,13 @@ export default function ProductsManager() {
     }
   };
 
-  const removeImage = (indexToRemove: number) => {
+  const removeImage = async (indexToRemove: number) => {
+    const imageToDelete = formData.images[indexToRemove];
+    if (imageToDelete) {
+      // Delete old file from Supabase Storage bucket so space isn't wasted
+      deleteStorageImage('products', imageToDelete);
+    }
+
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, idx) => idx !== indexToRemove)
@@ -250,9 +264,17 @@ export default function ProductsManager() {
 
   // Handle Delete Product
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    const productToDelete = products.find(p => p.id === id);
+    if (!confirm(`Are you sure you want to delete "${productToDelete?.title || 'this product'}"?`)) return;
 
     try {
+      // Delete associated images from Supabase Storage bucket
+      if (productToDelete?.images && productToDelete.images.length > 0) {
+        for (const imgUrl of productToDelete.images) {
+          deleteStorageImage('products', imgUrl);
+        }
+      }
+
       const { error } = await supabase
         .from('products')
         .delete()
@@ -260,7 +282,7 @@ export default function ProductsManager() {
 
       if (error) throw error;
       setProducts(products.filter(p => p.id !== id));
-      setSuccessMsg('Product deleted successfully!');
+      setSuccessMsg('Product deleted successfully from Supabase!');
     } catch (err: any) {
       alert('Failed to delete product: ' + err.message);
     }
