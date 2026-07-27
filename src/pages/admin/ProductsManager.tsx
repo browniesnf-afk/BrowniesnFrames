@@ -204,7 +204,11 @@ export default function ProductsManager() {
       category: formData.category,
       badge: formData.badge || null,
       images: productImages,
-      sizes: formData.sizes.length > 0 ? formData.sizes : null
+      sizes: formData.sizes.length > 0 ? formData.sizes : null,
+      metadata: {
+        ...((editingProduct as any)?.metadata || {}),
+        is_customizable: formData.is_customizable
+      }
     };
 
     try {
@@ -287,7 +291,7 @@ export default function ProductsManager() {
       badge: product.badge || '',
       images: product.images || [],
       sizes: product.sizes || (product.category === 'frames' ? DEFAULT_FRAME_SIZES : []),
-      is_customizable: product.is_customizable ?? (product.category === 'frames')
+      is_customizable: (product as any).metadata?.is_customizable ?? product.is_customizable ?? (product.category === 'frames')
     });
     setIsModalOpen(true);
   };

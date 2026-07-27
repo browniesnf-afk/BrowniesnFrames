@@ -260,10 +260,21 @@ export default function ProductDetail() {
     setCustomImages(prev => prev.filter((_, i) => i !== index));
   };
 
+const checkIsCustomizable = (p: any): boolean => {
+  if (!p) return false;
+  if (p.metadata && typeof p.metadata.is_customizable === 'boolean') {
+    return p.metadata.is_customizable;
+  }
+  if (typeof p.is_customizable === 'boolean') {
+    return p.is_customizable;
+  }
+  return p.category?.toLowerCase() === 'frames';
+};
+
   const handleAddToCart = (e?: React.MouseEvent) => {
     if (!product) return;
 
-    const isCustomizable = product.is_customizable === true || (product.is_customizable !== false && (product.category === 'frames' || product.category === 'Frames'));
+    const isCustomizable = checkIsCustomizable(product);
 
     if (isCustomizable) {
       if (customImages.length === 0 || !customText.trim()) {
@@ -290,7 +301,7 @@ export default function ProductDetail() {
 
   const handleBuyNow = (e?: React.MouseEvent) => {
     if (!product) return;
-    const isCustomizable = product.is_customizable === true || (product.is_customizable !== false && (product.category === 'frames' || product.category === 'Frames'));
+    const isCustomizable = checkIsCustomizable(product);
 
     if (isCustomizable) {
       if (customImages.length === 0 || !customText.trim()) {
@@ -489,8 +500,8 @@ export default function ProductDetail() {
           </div>
         )}
 
-        {/* Customization Options UI (Required if Customizable or Frame) */}
-        {(product.is_customizable === true || (product.is_customizable !== false && (product.category === 'frames' || product.category === 'Frames'))) && (
+        {/* Customization Options UI (Only shown if is_customizable is true) */}
+        {checkIsCustomizable(product) && (
           <div className="p-4 sm:p-5 bg-[#FAF6F0] rounded-2xl border border-[#8C4A27]/25 space-y-3.5 my-3 shadow-2xs">
             <div className="flex items-center gap-2 text-[#8C4A27] font-bold text-xs sm:text-sm">
               <Sparkles className="w-4 h-4" /> Customization Options (Required)
