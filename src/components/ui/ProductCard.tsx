@@ -2,6 +2,7 @@ import { Star, ShoppingCart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
+import { toCdnUrl } from '../../lib/cdn';
 
 interface ProductCardProps {
   id: string;
@@ -86,7 +87,7 @@ export const ProductCard = ({
       <div className="relative aspect-square bg-[#F5EAE1]/70 p-3 flex items-center justify-center overflow-hidden">
         <Link to={link} className="w-full h-full flex items-center justify-center">
           <img 
-            src={image} 
+            src={toCdnUrl(image)} 
             alt={title} 
             className="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-500 drop-shadow-sm"
           />

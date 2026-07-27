@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useOrders, type OrderItem } from '../../hooks/useOrders';
+import { toCdnUrl } from '../../lib/cdn';
 import { 
   ShoppingCart, 
   Search, 
@@ -359,7 +360,7 @@ export default function OrdersManager() {
                                   <div className="flex flex-wrap gap-2">
                                     {item.custom_images.map((imgUrl: string, i: number) => (
                                       <a key={i} href={imgUrl} target="_blank" rel="noopener noreferrer" className="relative w-16 h-16 rounded-lg overflow-hidden border border-[#8C4A27]/40 shadow-2xs hover:opacity-90 transition-opacity">
-                                        <img src={imgUrl} alt={`Customer upload ${i+1}`} className="w-full h-full object-cover" />
+                                        <img src={toCdnUrl(imgUrl)} alt={`Customer upload ${i+1}`} className="w-full h-full object-cover" />
                                       </a>
                                     ))}
                                   </div>

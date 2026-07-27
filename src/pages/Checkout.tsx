@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Loader2, CheckCircle2, ShieldCheck, User, Phone, MapPin, Building, Hash, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../supabase/client';
+import { toCdnUrl } from '../lib/cdn';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -281,7 +282,7 @@ export default function Checkout() {
             {cart.map(item => (
               <div key={`${item.id}-${item.size || ''}`} className="py-2.5 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img src={item.image} alt={item.title} className="w-10 h-10 rounded-xl object-cover bg-[#FAF6F0] border border-gray-100 shrink-0" />
+                  <img src={toCdnUrl(item.image)} alt={item.title} className="w-10 h-10 rounded-xl object-cover bg-[#FAF6F0] border border-gray-100 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-bold text-[#2C1A14] truncate">{item.title}</p>
                     <p className="text-gray-400 text-[10px]">Qty: {item.quantity} {item.size ? `• ${item.size}` : ''}</p>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag, Sparkles, Camera } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { toCdnUrl } from '../lib/cdn';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ export default function Cart() {
                 {/* LEFT SIDE: Actual PRODUCT image (e.g., frame design) */}
                 <div className="shrink-0">
                   <img 
-                    src={item.image || '/images/home_frames.jpg'} 
+                    src={toCdnUrl(item.image || '/images/home_frames.jpg')} 
                     alt={item.title} 
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-[#FAF6F0] border border-gray-100 shadow-2xs" 
                     onError={(e) => { (e.target as HTMLImageElement).src = '/images/home_frames.jpg'; }}
@@ -130,7 +131,7 @@ export default function Cart() {
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div className="relative shrink-0">
                                 <img 
-                                  src={item.custom_images[0]} 
+                                  src={toCdnUrl(item.custom_images[0])} 
                                   alt="Customer upload preview" 
                                   className="w-12 h-12 rounded-lg object-cover border border-[#8C4A27]/20 shadow-2xs" 
                                 />

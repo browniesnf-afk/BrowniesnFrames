@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Star, Minus, Plus, Search, Upload, Sparkles, X, AlertCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
+import { toCdnUrl } from '../../lib/cdn';
 
 const images = [
   '/images/frame_memories.jpg',
@@ -84,7 +85,7 @@ export default function MemoriesCollageFrame() {
       <div className="flex gap-3 mb-3.5">
         {/* Main Image */}
         <div className="flex-1 relative bg-[#FAF6F0] rounded-3xl overflow-hidden aspect-[4/3] max-h-[300px] border border-gray-100/80 shadow-2xs">
-          <img src={images[activeImageIndex]} alt="Main Product" className="w-full h-full object-cover" />
+          <img src={toCdnUrl(images[activeImageIndex])} alt="Main Product" className="w-full h-full object-cover" />
           <button className="absolute bottom-3 left-3 w-8 h-8 rounded-full bg-white/90 shadow-xs text-[#2C1A14] flex items-center justify-center cursor-pointer">
             <Search className="w-3.5 h-3.5" />
           </button>
@@ -101,7 +102,7 @@ export default function MemoriesCollageFrame() {
                 activeImageIndex === i ? "border-[#F05365] ring-1 ring-[#F05365]" : "border-transparent opacity-70 hover:opacity-100"
               )}
             >
-              <img src={img} alt={`Thumbnail ${i+1}`} className="w-full h-full object-cover" />
+              <img src={toCdnUrl(img)} alt={`Thumbnail ${i+1}`} className="w-full h-full object-cover" />
             </button>
           ))}
         </div>

@@ -4,6 +4,7 @@ import { Star, Minus, Plus, Search, Loader2, Upload, Sparkles, X, AlertCircle, S
 import { supabase } from '../../supabase/client';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
+import { toCdnUrl } from '../../lib/cdn';
 
 const DEFAULT_FRAME_SIZES = ['6 x 6 inch', '8 x 8 inch', '10 x 10 inch', '12 x 12 inch'];
 
@@ -403,7 +404,7 @@ const checkIsCustomizable = (p: any): boolean => {
         {/* Main Image with Shorter Aspect Ratio */}
         <div className="flex-1 relative bg-[#FAF6F0] rounded-3xl overflow-hidden aspect-[4/3] max-h-[300px] border border-gray-100/80 shadow-2xs">
           <img 
-            src={productImages[activeImageIndex] || productImages[0]} 
+            src={toCdnUrl(productImages[activeImageIndex] || productImages[0])} 
             alt={product.title} 
             className="w-full h-full object-cover" 
           />
@@ -428,7 +429,7 @@ const checkIsCustomizable = (p: any): boolean => {
                   activeImageIndex === i ? "border-[#F05365] ring-1 ring-[#F05365]" : "border-transparent opacity-70 hover:opacity-100"
                 )}
               >
-                <img src={img} alt={`Thumbnail ${i+1}`} className="w-full h-full object-cover" />
+                <img src={toCdnUrl(img)} alt={`Thumbnail ${i+1}`} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>

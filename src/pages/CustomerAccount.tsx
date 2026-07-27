@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../supabase/client';
+import { toCdnUrl } from '../lib/cdn';
 import { 
   Phone, 
   Lock, 
@@ -19,7 +21,6 @@ import {
   Truck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../supabase/client';
 
 interface CustomerUser {
   id?: string;
@@ -500,7 +501,7 @@ export default function CustomerAccount() {
                                       <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden border border-gray-200 shrink-0 shadow-2xs">
                                           <img 
-                                            src={item.image || '/images/home_brownies.jpg'} 
+                                            src={toCdnUrl(item.image || '/images/home_brownies.jpg')} 
                                             alt={item.title} 
                                             className="w-full h-full object-cover"
                                             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
@@ -544,7 +545,7 @@ export default function CustomerAccount() {
                                               rel="noopener noreferrer" 
                                               className="group relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-[#8C4A27]/30 shadow-2xs hover:border-[#8C4A27] transition-all"
                                             >
-                                              <img src={imgUrl} alt={`Uploaded photo ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                              <img src={toCdnUrl(imgUrl)} alt={`Uploaded photo ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-bold transition-opacity">
                                                 View Full
                                               </div>
