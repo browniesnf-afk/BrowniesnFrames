@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Minus, Plus, Search, Upload, Sparkles, X, AlertCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Star, Minus, Plus, Search, Upload, Sparkles, X, AlertCircle, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
 import { toCdnUrl } from '../../lib/cdn';
+import { supabase } from '../../supabase/client';
+import { compressImage } from '../../lib/imageCompressor';
 
 const images = [
   '/images/frame_memories.jpg',
@@ -26,22 +28,50 @@ export default function MemoriesCollageFrame() {
   const [customText, setCustomText] = useState('');
   const [customError, setCustomError] = useState<string | null>(null);
 
-  const handleCustomImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const fileArray = Array.from(files).slice(0, 4 - customImages.length);
+    setUploadingImage(true);
+    setCustomError(null);
+    try {
+      const fileArray = Array.from(files).slice(0, 4 - customImages.length);
+      const uploadedUrls: string[] = [];
 
-    fileArray.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          setCustomImages(prev => [...prev, reader.result as string].slice(0, 4));
-          setCustomError(null);
+      for (const file of fileArray) {
+        // Compress customer photo to ~150-250KB and max 1000x1000px
+        const compressedFile = await compressImage(file, 1000, 1000, 0.75);
+
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
+        const filePath = `customer-uploads/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('products')
+          .upload(filePath, compressedFile, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('products')
+          .getPublicUrl(filePath);
+
+        if (publicUrlData?.publicUrl) {
+          uploadedUrls.push(publicUrlData.publicUrl);
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+
+      setCustomImages(prev => [...prev, ...uploadedUrls].slice(0, 4));
+    } catch (err: any) {
+      console.error('Customer photo upload error:', err);
+      setCustomError('Failed to upload photo. Please check your network and try again.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const removeCustomImage = (index: number) => {
@@ -189,12 +219,22 @@ export default function MemoriesCollageFrame() {
 
               {customImages.length < 4 && (
                 <label className="w-16 h-16 rounded-xl border-2 border-dashed border-[#8C4A27]/40 bg-white hover:bg-[#F5EAE1] text-[#8C4A27] flex flex-col items-center justify-center cursor-pointer transition-colors shadow-2xs">
-                  <Upload className="w-5 h-5 mb-0.5" />
-                  <span className="text-[9px] font-bold">+ Photo</span>
+                  {uploadingImage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mb-0.5 animate-spin" />
+                      <span className="text-[8px] font-bold">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mb-0.5" />
+                      <span className="text-[9px] font-bold">+ Photo</span>
+                    </>
+                  )}
                   <input 
                     type="file" 
                     accept="image/*" 
                     multiple 
+                    disabled={uploadingImage}
                     onChange={handleCustomImageUpload} 
                     className="hidden" 
                   />

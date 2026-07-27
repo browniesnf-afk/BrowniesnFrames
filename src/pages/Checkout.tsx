@@ -136,19 +136,37 @@ export default function Checkout() {
       const realOrderId = insertResult?.[0]?.id || orderId;
 
       // 4. Save to local customer session history
-      const newOrderLocal = {
-        id: realOrderId,
-        display_id: orderId,
-        total_amount: finalTotal,
-        status: 'Pending',
-        items_summary: itemsSummary,
-        shipping_address: enrichedShippingAddress,
-        created_at: new Date().toISOString()
-      };
+      try {
+        const newOrderLocal = {
+          id: realOrderId,
+          display_id: orderId,
+          total_amount: finalTotal,
+          status: 'Pending',
+          items_summary: itemsSummary,
+          shipping_address: enrichedShippingAddress,
+          created_at: new Date().toISOString()
+        };
 
-      const existingLocalOrders = JSON.parse(localStorage.getItem(`orders_${phone}`) || '[]');
-      localStorage.setItem(`orders_${phone}`, JSON.stringify([newOrderLocal, ...existingLocalOrders]));
-      localStorage.setItem('active_customer_session', JSON.stringify({ name: fullName, phone }));
+        const existingLocalOrders = JSON.parse(localStorage.getItem(`orders_${phone}`) || '[]');
+        
+        // Strip heavy base64 strings from existing orders to clear space if any exist
+        const cleanedExisting = existingLocalOrders.map((o: any) => {
+          if (o.shipping_address?.cart_items) {
+            o.shipping_address.cart_items = o.shipping_address.cart_items.map((item: any) => {
+              if (item.custom_images && item.custom_images.some((img: string) => img.startsWith('data:image/'))) {
+                return { ...item, custom_images: ['/images/home_frames.jpg'] };
+              }
+              return item;
+            });
+          }
+          return o;
+        });
+
+        localStorage.setItem(`orders_${phone}`, JSON.stringify([newOrderLocal, ...cleanedExisting]));
+        localStorage.setItem('active_customer_session', JSON.stringify({ name: fullName, phone }));
+      } catch (storageErr) {
+        console.warn('Could not write order history to localStorage (quota exceeded):', storageErr);
+      }
 
       // 5. Clear Cart & Redirect to Customer Account
       clearCart();

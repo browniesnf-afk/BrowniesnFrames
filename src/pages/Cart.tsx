@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag, Sparkles, Camera } from 'lucide-react';
+import { Minus, Plus, Trash2, ChevronRight, ShoppingBag, CheckCircle2, AlertCircle, ArrowRight, Tag, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { toCdnUrl } from '../lib/cdn';
+import { supabase } from '../supabase/client';
+import { compressImage } from '../lib/imageCompressor';
+import { cn } from '../lib/utils';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -40,25 +43,49 @@ export default function Cart() {
     }
   };
 
-  const handleReuploadPhoto = (id: string, size: string | undefined, e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+
+  const handleReuploadPhoto = async (id: string, size: string | undefined, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const fileArray = Array.from(files).slice(0, 4);
-    const newImages: string[] = [];
+    setUploadingItemId(id);
+    try {
+      const fileArray = Array.from(files).slice(0, 4);
+      const uploadedUrls: string[] = [];
 
-    fileArray.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          newImages.push(reader.result as string);
-          if (newImages.length === fileArray.length) {
-            updateCustomization(id, size, newImages);
-          }
+      for (const file of fileArray) {
+        // Compress customer photo to ~150-250KB and max 1000x1000px
+        const compressedFile = await compressImage(file, 1000, 1000, 0.75);
+
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
+        const filePath = `customer-uploads/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('products')
+          .upload(filePath, compressedFile, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('products')
+          .getPublicUrl(filePath);
+
+        if (publicUrlData?.publicUrl) {
+          uploadedUrls.push(publicUrlData.publicUrl);
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+
+      updateCustomization(id, size, uploadedUrls);
+    } catch (err: any) {
+      console.error('Customer reupload photo error:', err);
+      alert('Failed to upload photo. Please check your network and try again.');
+    } finally {
+      setUploadingItemId(null);
+    }
   };
 
   return (
@@ -148,13 +175,26 @@ export default function Cart() {
                             </div>
 
                             {/* Change Photo Button */}
-                            <label className="text-[10px] font-extrabold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-amber-50/80 hover:bg-amber-100 px-2.5 py-1.5 rounded-md border border-[#8C4A27]/25 transition-colors shadow-2xs shrink-0">
-                              <Camera className="w-3 h-3 text-[#8C4A27]" />
-                              <span>Change Photo</span>
+                            <label className={cn(
+                              "text-[10px] font-extrabold text-[#8C4A27] hover:text-[#733c21] flex items-center gap-1 cursor-pointer bg-amber-50/80 hover:bg-amber-100 px-2.5 py-1.5 rounded-md border border-[#8C4A27]/25 transition-colors shadow-2xs shrink-0",
+                              uploadingItemId === item.id && "pointer-events-none opacity-50"
+                            )}>
+                              {uploadingItemId === item.id ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 text-[#8C4A27] animate-spin" />
+                                  <span>Uploading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Camera className="w-3 h-3 text-[#8C4A27]" />
+                                  <span>Change Photo</span>
+                                </>
+                              )}
                               <input 
                                 type="file" 
                                 accept="image/*" 
                                 multiple 
+                                disabled={uploadingItemId === item.id}
                                 onChange={(e) => handleReuploadPhoto(item.id, item.size, e)} 
                                 className="hidden" 
                               />
