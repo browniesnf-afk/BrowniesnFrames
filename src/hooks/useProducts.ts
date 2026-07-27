@@ -13,6 +13,7 @@ export interface ProductItem {
   badge?: 'BESTSELLER' | 'NEW' | null;
   link: string;
   category: string;
+  isCustomizable?: boolean;
 }
 
 export function useProducts(categoryFilter?: string) {
@@ -35,18 +36,33 @@ export function useProducts(categoryFilter?: string) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formatted: ProductItem[] = data.map(item => ({
-          id: item.id,
-          title: item.title,
-          description: item.description || '',
-          price: item.price,
-          image: item.images?.[0] || '/images/home_brownies.jpg',
-          rating: item.rating || 5,
-          reviewsCount: item.reviews_count || 100,
-          badge: item.badge as any || null,
-          link: `/products/${item.slug || item.id}`,
-          category: item.category
-        }));
+        const formatted: ProductItem[] = data.map(item => {
+          const isCustomizable = typeof item.metadata?.is_customizable === 'boolean'
+            ? item.metadata.is_customizable
+            : (
+                item.category?.toLowerCase() === 'frames' ||
+                item.title.toLowerCase().includes('frame') ||
+                item.title.toLowerCase().includes('custom') ||
+                item.title.toLowerCase().includes('collage') ||
+                item.title.toLowerCase().includes('photo') ||
+                item.title.toLowerCase().includes('lamp') ||
+                item.title.toLowerCase().includes('shaker')
+              );
+
+          return {
+            id: item.id,
+            title: item.title,
+            description: item.description || '',
+            price: item.price,
+            image: item.images?.[0] || '/images/home_brownies.jpg',
+            rating: item.rating || 5,
+            reviewsCount: item.reviews_count || 100,
+            badge: item.badge as any || null,
+            link: `/products/${item.slug || item.id}`,
+            category: item.category,
+            isCustomizable: isCustomizable
+          };
+        });
         console.log('useProducts success formatting:', formatted.length, 'products');
         setProducts(formatted);
       } else {

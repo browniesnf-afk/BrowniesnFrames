@@ -1,4 +1,5 @@
-import { Star, ShoppingCart } from 'lucide-react';
+import { useState } from 'react';
+import { Star, ShoppingCart, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
@@ -15,6 +16,7 @@ interface ProductCardProps {
   badge?: 'BESTSELLER' | 'NEW' | null;
   link: string;
   category?: string;
+  isCustomizable?: boolean;
 }
 
 const removeEmojis = (str: string): string => {
@@ -44,10 +46,12 @@ export const ProductCard = ({
   reviewsCount,
   badge,
   link,
-  category
+  category,
+  isCustomizable
 }: ProductCardProps) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const [showToast, setShowToast] = useState(false);
 
   const formattedTitle = toTitleCase(title);
   const formattedDescription = removeEmojis(description);
@@ -62,22 +66,40 @@ export const ProductCard = ({
     e.preventDefault();
     e.stopPropagation();
 
-    // If product is a Frame or Customizable item, redirect to product detail page for required photo upload & custom text
-    const isFrameOrCustom = category?.toLowerCase() === 'frames' || title.toLowerCase().includes('frame') || title.toLowerCase().includes('collage');
-    if (isFrameOrCustom) {
+    // Check if customizable (from prop or fallback check on title/category)
+    const checkCustomizable = isCustomizable !== undefined 
+      ? isCustomizable 
+      : (
+          category?.toLowerCase() === 'frames' || 
+          title.toLowerCase().includes('frame') || 
+          title.toLowerCase().includes('custom') ||
+          title.toLowerCase().includes('collage') ||
+          title.toLowerCase().includes('photo') ||
+          title.toLowerCase().includes('lamp') ||
+          title.toLowerCase().includes('shaker')
+        );
+
+    if (checkCustomizable) {
+      // 1. Customized Products: Navigate to Product Details Page for mandatory customization options
       navigate(link);
       return;
     }
 
-    // Quick Add to cart with fly-to-cart animation
+    // 2. Non-Customized Products: Direct quick add to cart
     addToCart({
       id: id,
       title: title,
-      category: category || 'Custom Gift Hamper',
+      category: category || 'Brownies',
       price: price,
       image: image,
       quantity: 1
     }, e);
+
+    // Show Success Toast Notification
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 2500);
   };
 
   return (
@@ -156,6 +178,14 @@ export const ProductCard = ({
           </div>
         </div>
       </div>
+
+      {/* Success Toast Notification for Non-Customized Quick Add */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2C1A14] text-white px-4 py-2.5 rounded-full shadow-xl flex items-center gap-2 text-xs font-semibold border border-amber-900/30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>Product added to cart.</span>
+        </div>
+      )}
 
     </div>
   );
