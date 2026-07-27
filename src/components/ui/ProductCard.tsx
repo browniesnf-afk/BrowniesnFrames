@@ -13,7 +13,6 @@ interface ProductCardProps {
   reviewsCount: number;
   badge?: 'BESTSELLER' | 'NEW' | null;
   link: string;
-  weight?: string;
   category?: string;
 }
 
@@ -27,7 +26,6 @@ export const ProductCard = ({
   reviewsCount,
   badge,
   link,
-  weight,
   category
 }: ProductCardProps) => {
   const { addToCart } = useCart();
@@ -111,12 +109,11 @@ export const ProductCard = ({
           </div>
         </div>
 
-        {/* Bottom Section: Price/Weight + Actions */}
+        {/* Bottom Section: Price + Actions */}
         <div>
-          {/* Price & Weight on same line */}
+          {/* Price */}
           <div className="flex items-baseline justify-between mb-2">
             <span className="font-sans font-black text-lg sm:text-2xl text-[#2D0D15] tracking-tight">₹{price}</span>
-            {weight && <span className="text-[10px] sm:text-xs text-[#6E5F55] font-sans font-medium">{weight}</span>}
           </div>
           
           {/* Action Buttons */}

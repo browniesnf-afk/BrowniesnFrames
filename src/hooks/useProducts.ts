@@ -40,7 +40,6 @@ export function useProducts(categoryFilter?: string) {
           title: item.title,
           description: item.description || '',
           price: item.price,
-          weight: item.weight || '250g',
           image: item.images?.[0] || '/images/home_brownies.jpg',
           rating: item.rating || 5,
           reviewsCount: item.reviews_count || 100,
@@ -71,10 +70,10 @@ export function useProducts(categoryFilter?: string) {
 function getFallbackProducts(categoryFilter?: string): ProductItem[] {
   const all: ProductItem[] = [
     // Brownies
-    { id: '1', title: 'Belgian Chocolate Brownie', description: 'Rich, fudgy & decadent chocolate brownie.', price: 399, weight: '250g', image: '/images/brownie_belgian.jpg', rating: 5, reviewsCount: 132, badge: 'BESTSELLER', link: '/products/belgian-chocolate-brownie', category: 'brownies' },
-    { id: '2', title: 'Walnut Brownie', description: 'Crunchy walnuts with rich chocolate brownie.', price: 449, weight: '250g', image: '/images/brownie_walnut.jpg', rating: 5, reviewsCount: 96, badge: 'NEW', link: '/products/walnut-brownie', category: 'brownies' },
-    { id: '3', title: 'Nutella Brownie', description: 'Gooey Nutella swirl in every bite.', price: 499, weight: '250g', image: '/images/brownie_nutella.jpg', rating: 5, reviewsCount: 118, badge: null, link: '/products/nutella-brownie', category: 'brownies' },
-    { id: '4', title: 'Biscoff Brownie', description: 'Biscoff spread with crunchy biscoff crumbs.', price: 449, weight: '250g', image: '/images/brownie_biscoff.jpg', rating: 5, reviewsCount: 87, badge: null, link: '/products/biscoff-brownie', category: 'brownies' },
+    { id: '1', title: 'Belgian Chocolate Brownie', description: 'Rich, fudgy & decadent chocolate brownie.', price: 399, image: '/images/brownie_belgian.jpg', rating: 5, reviewsCount: 132, badge: 'BESTSELLER', link: '/products/belgian-chocolate-brownie', category: 'brownies' },
+    { id: '2', title: 'Walnut Brownie', description: 'Crunchy walnuts with rich chocolate brownie.', price: 449, image: '/images/brownie_walnut.jpg', rating: 5, reviewsCount: 96, badge: 'NEW', link: '/products/walnut-brownie', category: 'brownies' },
+    { id: '3', title: 'Nutella Brownie', description: 'Gooey Nutella swirl in every bite.', price: 499, image: '/images/brownie_nutella.jpg', rating: 5, reviewsCount: 118, badge: null, link: '/products/nutella-brownie', category: 'brownies' },
+    { id: '4', title: 'Biscoff Brownie', description: 'Biscoff spread with crunchy biscoff crumbs.', price: 449, image: '/images/brownie_biscoff.jpg', rating: 5, reviewsCount: 87, badge: null, link: '/products/biscoff-brownie', category: 'brownies' },
     
     // Frames
     { id: '5', title: 'Classic Collage Frame', description: 'Elegant wooden collage frame to hold your favorite moments.', price: 799, image: '/images/frame_classic.jpg', rating: 5, reviewsCount: 128, badge: 'BESTSELLER', link: '/products/classic-collage-frame', category: 'frames' },
