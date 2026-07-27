@@ -1,8 +1,6 @@
 const SUPABASE_STORAGE_URL = 'https://rapihhocsnmckogsmokp.supabase.co/storage/v1/object/public';
 
-// Replace this with your actual Cloudflare Worker URL (e.g. 'https://images.browniesnframes.workers.dev')
-// By default, it falls back to direct Supabase URL if not configured.
-const CLOUDFLARE_CDN_URL = 'https://images.browniesnframes.workers.dev';
+const CLOUDFLARE_CDN_URL = 'https://browniesnframes-cdn.browniesnf.workers.dev';
 
 /**
  * Routes a Supabase storage image URL through the Cloudflare Worker CDN caching layer.
