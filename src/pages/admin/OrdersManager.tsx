@@ -62,6 +62,8 @@ const SectionCard = ({ icon, title, children, accent = false }: {
 export default function OrdersManager() {
   const { orders, loading, updateOrderStatus, seedSampleOrders } = useOrders();
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'custom'>('all');
+  const [customDate, setCustomDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -96,7 +98,34 @@ export default function OrdersManager() {
       (order.items_summary || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (order.shipping_address?.fullName || order.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (order.shipping_address?.phone || order.customer_phone || '').includes(searchQuery);
-    return matchesStatus && matchesSearch;
+
+    let matchesDate = true;
+    if (dateFilter !== 'all') {
+      const orderDate = new Date(order.created_at);
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(today.getDate() + 1);
+
+      if (dateFilter === 'today') {
+        matchesDate =
+          orderDate.getFullYear() === today.getFullYear() &&
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getDate() === today.getDate();
+      } else if (dateFilter === 'tomorrow') {
+        matchesDate =
+          orderDate.getFullYear() === tomorrow.getFullYear() &&
+          orderDate.getMonth() === tomorrow.getMonth() &&
+          orderDate.getDate() === tomorrow.getDate();
+      } else if (dateFilter === 'custom' && customDate) {
+        const [year, month, day] = customDate.split('-').map(Number);
+        matchesDate =
+          orderDate.getFullYear() === year &&
+          orderDate.getMonth() === month - 1 &&
+          orderDate.getDate() === day;
+      }
+    }
+
+    return matchesStatus && matchesSearch && matchesDate;
   });
 
   // ── Summary counts ─────────────────────────────────────────
@@ -109,12 +138,12 @@ export default function OrdersManager() {
 
   const statCards = [
     { key: 'All',       label: 'Total Orders',  value: orders.length,              sub: `${totalItems} items`,       icon: ShoppingCart,  bg: 'bg-white',         border: 'border-gray-200', text: 'text-gray-900', ring: 'ring-[#8C4A27]' },
-    { key: 'Pending',   label: 'Pending',       value: countByStatus('Pending'),    sub: 'Awaiting confirmation',     icon: Package,       bg: 'bg-amber-50',      border: 'border-amber-200', text: 'text-amber-700', ring: 'ring-amber-500' },
-    { key: 'Confirmed', label: 'Confirmed',     value: countByStatus('Confirmed'),  sub: 'Order accepted',           icon: CheckCircle2,  bg: 'bg-blue-50',       border: 'border-blue-200',  text: 'text-blue-700',  ring: 'ring-blue-500' },
-    { key: 'Packed',    label: 'Packed',        value: countByStatus('Packed'),     sub: 'Ready to ship',            icon: Box,           bg: 'bg-violet-50',     border: 'border-violet-200',text: 'text-violet-700',ring: 'ring-violet-500' },
-    { key: 'Shipped',   label: 'Shipped',       value: countByStatus('Shipped'),    sub: 'On the way',               icon: Truck,         bg: 'bg-indigo-50',     border: 'border-indigo-200',text: 'text-indigo-700',ring: 'ring-indigo-500' },
-    { key: 'Delivered', label: 'Delivered',     value: countByStatus('Delivered'),  sub: `₹${totalRevenue.toLocaleString('en-IN')}`, icon: CheckCircle2, bg: 'bg-emerald-50', border: 'border-emerald-200',text: 'text-emerald-700',ring: 'ring-emerald-500' },
-    { key: 'Cancelled', label: 'Cancelled',     value: countByStatus('Cancelled'),  sub: 'Cancelled',                icon: X,             bg: 'bg-red-50',        border: 'border-red-200',   text: 'text-red-700',   ring: 'ring-red-500' },
+    { key: 'Pending',   label: 'Pending',       value: countByStatus('Pending'),    sub: 'Awaiting action',           icon: Package,       bg: 'bg-amber-50/80',   border: 'border-amber-200', text: 'text-amber-800', ring: 'ring-amber-500' },
+    { key: 'Confirmed', label: 'Confirmed',     value: countByStatus('Confirmed'),  sub: 'Accepted',                 icon: CheckCircle2,  bg: 'bg-blue-50/80',    border: 'border-blue-200',  text: 'text-blue-800',  ring: 'ring-blue-500' },
+    { key: 'Packed',    label: 'Packed',        value: countByStatus('Packed'),     sub: 'Ready to ship',            icon: Box,           bg: 'bg-violet-50/80',  border: 'border-violet-200',text: 'text-violet-800',ring: 'ring-violet-500' },
+    { key: 'Shipped',   label: 'Shipped',       value: countByStatus('Shipped'),    sub: 'On the way',               icon: Truck,         bg: 'bg-indigo-50/80',  border: 'border-indigo-200',text: 'text-indigo-800',ring: 'ring-indigo-500' },
+    { key: 'Delivered', label: 'Delivered',     value: countByStatus('Delivered'),  sub: `₹${totalRevenue.toLocaleString('en-IN')}`, icon: CheckCircle2, bg: 'bg-emerald-50/80', border: 'border-emerald-200',text: 'text-emerald-800',ring: 'ring-emerald-500' },
+    { key: 'Cancelled', label: 'Cancelled',     value: countByStatus('Cancelled'),  sub: 'Cancelled',                icon: X,             bg: 'bg-red-50/80',     border: 'border-red-200',   text: 'text-red-800',   ring: 'ring-red-500' },
   ];
 
   return (
@@ -135,7 +164,7 @@ export default function OrdersManager() {
         </button>
       </div>
 
-      {/* ── KPI Stats Bar ───────────────────────────────────── */}
+      {/* ── KPI Stats Bar (Interactive Status Cards) ────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
         {statCards.map(({ key, label, value, sub, icon: Icon, bg, border, text, ring }) => {
           const isActive = selectedStatus === key;
@@ -143,7 +172,11 @@ export default function OrdersManager() {
             <div
               key={key}
               onClick={() => setSelectedStatus(key)}
-              className={`${bg} border ${isActive ? `${border} ring-2 ${ring} shadow-md scale-[1.02]` : `${border} opacity-85 hover:opacity-100 hover:shadow-sm`} rounded-2xl p-3 cursor-pointer transition-all group`}
+              className={`${bg} border ${
+                isActive
+                  ? `${border} ring-2 ${ring} shadow-md scale-[1.02] bg-white`
+                  : `${border} opacity-85 hover:opacity-100 hover:shadow-xs`
+              } rounded-2xl p-3 cursor-pointer transition-all duration-200 group relative overflow-hidden`}
             >
               <div className="flex items-start justify-between gap-1">
                 <div className="flex-1 min-w-0">
@@ -151,10 +184,15 @@ export default function OrdersManager() {
                   <p className={`text-2xl font-black ${text} leading-none`}>{loading ? '—' : value}</p>
                   <p className="text-[9px] mt-1 text-gray-500/80 truncate font-medium">{sub}</p>
                 </div>
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${bg} border ${border} shrink-0 group-hover:scale-105 transition-transform`}>
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${bg} border ${border} shrink-0 group-hover:scale-110 transition-transform shadow-2xs`}>
                   <Icon className={`w-3.5 h-3.5 ${text}`} />
                 </div>
               </div>
+              {isActive && (
+                <div className="mt-2 text-[9px] font-bold text-[#8C4A27] flex items-center gap-1 pt-1 border-t border-gray-200/50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#8C4A27] animate-pulse"></span> Active Filter
+                </div>
+              )}
             </div>
           );
         })}
@@ -167,38 +205,67 @@ export default function OrdersManager() {
         </div>
       )}
 
-      {/* Filter & Search */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-2xs">
-        <div className="flex flex-wrap gap-1.5">
-          {['All', 'Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'].map(s => {
-            const count = s === 'All' ? orders.length : countByStatus(s);
-            const active = selectedStatus === s;
-            return (
-              <button
-                key={s}
-                onClick={() => setSelectedStatus(s)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  active ? 'bg-[#8C4A27] text-white shadow-xs' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {s}
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
-                  active ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-500'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="relative max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* ── Search & Calendar Date Toolbar ────────────────────── */}
+      <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by Order ID, Customer Name, or Phone..."
+            placeholder="Search by Order ID, Customer Name, Phone, or Items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8C4A27]"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[#8C4A27] focus:ring-2 focus:ring-[#8C4A27]/10 transition-all font-medium text-gray-800 placeholder:text-gray-400"
+          />
+        </div>
+
+        {/* Date Filter Controls */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-bold text-gray-400 mr-1 flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5 text-[#8C4A27]" /> Filter Date:
+          </span>
+          <button
+            onClick={() => { setDateFilter('all'); setCustomDate(''); }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              dateFilter === 'all'
+                ? 'bg-[#8C4A27] text-white shadow-xs'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60'
+            }`}
+          >
+            All Dates
+          </button>
+          <button
+            onClick={() => setDateFilter('today')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+              dateFilter === 'today'
+                ? 'bg-[#8C4A27] text-white shadow-xs'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60'
+            }`}
+          >
+            <span>📅</span> Today's Orders
+          </button>
+          <button
+            onClick={() => setDateFilter('tomorrow')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+              dateFilter === 'tomorrow'
+                ? 'bg-[#8C4A27] text-white shadow-xs'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60'
+            }`}
+          >
+            <span>🌅</span> Tomorrow's Orders
+          </button>
+          <input
+            type="date"
+            value={customDate}
+            onChange={(e) => {
+              setCustomDate(e.target.value);
+              setDateFilter(e.target.value ? 'custom' : 'all');
+            }}
+            className={`px-2.5 py-1 rounded-xl text-xs font-medium border cursor-pointer focus:outline-none transition-all ${
+              dateFilter === 'custom'
+                ? 'bg-[#8C4A27] text-white border-[#8C4A27]'
+                : 'bg-gray-50 text-gray-600 border-gray-200/60 hover:bg-gray-100'
+            }`}
           />
         </div>
       </div>
