@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Minus, Plus, Search, Upload, Sparkles, X, AlertCircle } from 'lucide-react';
+import { Star, Minus, Plus, Search, Upload, Sparkles, X, AlertCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../context/CartContext';
 
@@ -265,6 +265,16 @@ export default function MemoriesCollageFrame() {
           >
             Buy Now
           </button>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="flex items-center justify-center gap-3 pt-3 text-[11px] font-medium flex-wrap">
+          <span className="flex items-center gap-1.5 text-[#8C4A27] bg-amber-50/80 border border-amber-200/80 px-2.5 py-1 rounded-lg">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#8C4A27]" /> Secure Online Payment
+          </span>
+          <span className="flex items-center gap-1.5 text-gray-600 bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-lg">
+            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Free Pan-India Delivery
+          </span>
         </div>
 
       </div>

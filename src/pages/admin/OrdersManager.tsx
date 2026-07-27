@@ -391,7 +391,7 @@ export default function OrdersManager() {
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Payment Method</span>
-                    <span className="font-bold text-gray-900">Cash on Delivery (Pending)</span>
+                    <span className="font-bold text-[#8C4A27]">Online Payment (Confirmed)</span>
                   </div>
                   <div className="border-t border-gray-200/80 pt-2 flex justify-between text-base font-extrabold text-gray-900">
                     <span>Total Amount</span>

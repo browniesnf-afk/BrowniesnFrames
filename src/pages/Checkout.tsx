@@ -317,10 +317,10 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* Cash on Delivery Badge */}
+        {/* Secure Online Payment Badge */}
         <div className="flex items-center justify-center gap-4 text-[11px] text-gray-500 font-medium">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-green-600" /> Cash on Delivery Available
+          <span className="flex items-center gap-1.5 text-[#8C4A27]">
+            <ShieldCheck className="w-4 h-4 text-[#8C4A27]" /> Secure Online Payment
           </span>
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-green-600" /> Instant Order Confirmation
