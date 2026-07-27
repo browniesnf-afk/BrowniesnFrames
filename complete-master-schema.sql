@@ -139,3 +139,16 @@ INSERT INTO public.categories (name, slug, description, image_url, is_active) VA
 ('Frames', 'frames', 'Beautifully crafted frames to hold your most cherished memories.', '/images/home_frames.jpg', true),
 ('Gifts', 'gifts', 'Thoughtful gifts for every occasion, beautifully packed with love.', '/images/home_gifts.jpg', true)
 ON CONFLICT (slug) DO NOTHING;
+
+-- ====================================================================
+-- SUPABASE REALTIME CONFIGURATION
+-- Recreates the publication to include all required tables.
+-- ====================================================================
+DROP PUBLICATION IF EXISTS supabase_realtime;
+CREATE PUBLICATION supabase_realtime FOR TABLE 
+    public.products, 
+    public.categories, 
+    public.orders, 
+    public.order_items, 
+    public.customers;
+

@@ -80,6 +80,52 @@ export default function PromoManager() {
 
   useEffect(() => {
     fetchPromos();
+
+    // Subscribe to promo_codes table realtime events in admin manager
+    const channel = supabase
+      .channel('promo_codes_admin_realtime_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'promo_codes' },
+        (payload) => {
+          console.log('⚡ Realtime promo code update in Admin:', payload);
+          if (payload.eventType === 'INSERT') {
+            setPromos(prev => {
+              const formatted: PromoCode = {
+                id: payload.new.id || payload.new.code,
+                code: payload.new.code,
+                discount_type: payload.new.discount_type || (payload.new.discount_percent && !payload.new.discount_value ? 'percentage' : 'flat'),
+                discount_value: Number(payload.new.discount_value ?? payload.new.discount_percent ?? payload.new.value ?? 10),
+                min_order_amount: Number(payload.new.min_order_amount ?? payload.new.min_order_value ?? 0),
+                is_active: payload.new.is_active !== false
+              };
+              if (prev.some(p => p.id === formatted.id)) return prev;
+              return [formatted, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setPromos(prev => prev.map(p => {
+              if (p.id === payload.new.id) {
+                return {
+                  id: payload.new.id || payload.new.code,
+                  code: payload.new.code,
+                  discount_type: payload.new.discount_type || (payload.new.discount_percent && !payload.new.discount_value ? 'percentage' : 'flat'),
+                  discount_value: Number(payload.new.discount_value ?? payload.new.discount_percent ?? payload.new.value ?? 10),
+                  min_order_amount: Number(payload.new.min_order_amount ?? payload.new.min_order_value ?? 0),
+                  is_active: payload.new.is_active !== false
+                };
+              }
+              return p;
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            setPromos(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

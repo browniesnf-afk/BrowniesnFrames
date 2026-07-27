@@ -318,7 +318,36 @@ const checkIsCustomizable = (p: any): boolean => {
   useEffect(() => {
     if (!id) return;
     fetchProductDetails();
-  }, [id]);
+
+    // Subscribe to products table updates to show stock and detail changes instantly
+    const channel = supabase
+      .channel(`product_detail_realtime_${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('⚡ Product detail realtime update:', payload);
+          if (payload.new.id === product?.id || payload.new.slug === id) {
+            setProduct(payload.new);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('⚡ Product detail realtime delete:', payload);
+          if (payload.old.id === product?.id) {
+            setProduct(null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, product?.id]);
 
   const fetchProductDetails = async () => {
     setLoading(true);

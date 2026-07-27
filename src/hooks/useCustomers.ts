@@ -33,6 +33,32 @@ export function useCustomers() {
 
   useEffect(() => {
     fetchCustomers();
+
+    // Subscribe to customers table realtime events
+    const channel = supabase
+      .channel('customers_admin_realtime_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        (payload) => {
+          console.log('⚡ Realtime customer update:', payload);
+          if (payload.eventType === 'INSERT') {
+            setCustomers(prev => {
+              if (prev.some(c => c.id === payload.new.id)) return prev;
+              return [payload.new as Customer, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setCustomers(prev => prev.map(c => c.id === payload.new.id ? (payload.new as Customer) : c));
+          } else if (payload.eventType === 'DELETE') {
+            setCustomers(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return { customers, loading, refetch: fetchCustomers };
