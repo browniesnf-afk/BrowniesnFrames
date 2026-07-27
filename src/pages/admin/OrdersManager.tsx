@@ -98,8 +98,24 @@ export default function OrdersManager() {
     return matchesStatus && matchesSearch;
   });
 
+  // ── Summary counts ─────────────────────────────────────────
+  const countByStatus = (status: string) => orders.filter(o => o.status === status).length;
+  const totalItems = orders.reduce((sum, o) => {
+    const items = o.shipping_address?.cart_items;
+    return sum + (Array.isArray(items) ? items.reduce((s: number, i: any) => s + (i.quantity || 1), 0) : 1);
+  }, 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+
+  const statCards = [
+    { label: 'Total Orders',  value: orders.length,              sub: `${totalItems} items`,       icon: ShoppingCart,  bg: 'bg-white',         border: 'border-gray-200', text: 'text-gray-900', sub_color: 'text-gray-400' },
+    { label: 'Pending',       value: countByStatus('Pending'),    sub: 'Awaiting confirmation',     icon: Package,       bg: 'bg-amber-50',      border: 'border-amber-200', text: 'text-amber-700', sub_color: 'text-amber-500/70' },
+    { label: 'In Progress',   value: countByStatus('Confirmed') + countByStatus('Packed') + countByStatus('Shipped'), sub: 'Confirmed + Packed + Shipped', icon: Truck, bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', sub_color: 'text-indigo-400/70' },
+    { label: 'Delivered',     value: countByStatus('Delivered'), sub: `₹${totalRevenue.toLocaleString('en-IN')} revenue`, icon: CheckCircle2, bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', sub_color: 'text-emerald-500/70' },
+    { label: 'Cancelled',     value: countByStatus('Cancelled'), sub: 'Need attention',            icon: X,             bg: 'bg-red-50',        border: 'border-red-200',   text: 'text-red-700',   sub_color: 'text-red-400/70' },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -109,11 +125,33 @@ export default function OrdersManager() {
         </div>
         <button
           onClick={seedSampleOrders}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <Database className="w-3.5 h-3.5" />
           Seed Sample Orders
         </button>
+      </div>
+
+      {/* ── KPI Stats Bar ───────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {statCards.map(({ label, value, sub, icon: Icon, bg, border, text, sub_color }) => (
+          <div
+            key={label}
+            onClick={() => setSelectedStatus(label === 'Total Orders' ? 'All' : label === 'In Progress' ? selectedStatus : label)}
+            className={`${bg} border ${border} rounded-2xl px-4 py-3.5 cursor-pointer hover:shadow-md transition-all group`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 truncate">{label}</p>
+                <p className={`text-3xl font-black ${text} leading-none`}>{loading ? '—' : value}</p>
+                <p className={`text-[10px] mt-1.5 ${sub_color} truncate`}>{sub}</p>
+              </div>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${bg} border ${border} shrink-0 group-hover:scale-110 transition-transform`}>
+                <Icon className={`w-4 h-4 ${text}`} />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {successMsg && (
@@ -126,17 +164,26 @@ export default function OrdersManager() {
       {/* Filter & Search */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-2xs">
         <div className="flex flex-wrap gap-1.5">
-          {['All', 'Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'].map(s => (
-            <button
-              key={s}
-              onClick={() => setSelectedStatus(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                selectedStatus === s ? 'bg-[#8C4A27] text-white font-semibold' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+          {['All', 'Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'].map(s => {
+            const count = s === 'All' ? orders.length : countByStatus(s);
+            const active = selectedStatus === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setSelectedStatus(s)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  active ? 'bg-[#8C4A27] text-white shadow-xs' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {s}
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
+                  active ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <div className="relative max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
