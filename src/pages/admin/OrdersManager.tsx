@@ -21,7 +21,8 @@ import {
   ChevronRight,
   ClipboardList,
   IndianRupee,
-  RefreshCw
+  RefreshCw,
+  Box
 } from 'lucide-react';
 
 const statusConfig: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -107,11 +108,13 @@ export default function OrdersManager() {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
   const statCards = [
-    { label: 'Total Orders',  value: orders.length,              sub: `${totalItems} items`,       icon: ShoppingCart,  bg: 'bg-white',         border: 'border-gray-200', text: 'text-gray-900', sub_color: 'text-gray-400' },
-    { label: 'Pending',       value: countByStatus('Pending'),    sub: 'Awaiting confirmation',     icon: Package,       bg: 'bg-amber-50',      border: 'border-amber-200', text: 'text-amber-700', sub_color: 'text-amber-500/70' },
-    { label: 'In Progress',   value: countByStatus('Confirmed') + countByStatus('Packed') + countByStatus('Shipped'), sub: 'Confirmed + Packed + Shipped', icon: Truck, bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', sub_color: 'text-indigo-400/70' },
-    { label: 'Delivered',     value: countByStatus('Delivered'), sub: `₹${totalRevenue.toLocaleString('en-IN')} revenue`, icon: CheckCircle2, bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', sub_color: 'text-emerald-500/70' },
-    { label: 'Cancelled',     value: countByStatus('Cancelled'), sub: 'Need attention',            icon: X,             bg: 'bg-red-50',        border: 'border-red-200',   text: 'text-red-700',   sub_color: 'text-red-400/70' },
+    { key: 'All',       label: 'Total Orders',  value: orders.length,              sub: `${totalItems} items`,       icon: ShoppingCart,  bg: 'bg-white',         border: 'border-gray-200', text: 'text-gray-900', ring: 'ring-[#8C4A27]' },
+    { key: 'Pending',   label: 'Pending',       value: countByStatus('Pending'),    sub: 'Awaiting confirmation',     icon: Package,       bg: 'bg-amber-50',      border: 'border-amber-200', text: 'text-amber-700', ring: 'ring-amber-500' },
+    { key: 'Confirmed', label: 'Confirmed',     value: countByStatus('Confirmed'),  sub: 'Order accepted',           icon: CheckCircle2,  bg: 'bg-blue-50',       border: 'border-blue-200',  text: 'text-blue-700',  ring: 'ring-blue-500' },
+    { key: 'Packed',    label: 'Packed',        value: countByStatus('Packed'),     sub: 'Ready to ship',            icon: Box,           bg: 'bg-violet-50',     border: 'border-violet-200',text: 'text-violet-700',ring: 'ring-violet-500' },
+    { key: 'Shipped',   label: 'Shipped',       value: countByStatus('Shipped'),    sub: 'On the way',               icon: Truck,         bg: 'bg-indigo-50',     border: 'border-indigo-200',text: 'text-indigo-700',ring: 'ring-indigo-500' },
+    { key: 'Delivered', label: 'Delivered',     value: countByStatus('Delivered'),  sub: `₹${totalRevenue.toLocaleString('en-IN')}`, icon: CheckCircle2, bg: 'bg-emerald-50', border: 'border-emerald-200',text: 'text-emerald-700',ring: 'ring-emerald-500' },
+    { key: 'Cancelled', label: 'Cancelled',     value: countByStatus('Cancelled'),  sub: 'Cancelled',                icon: X,             bg: 'bg-red-50',        border: 'border-red-200',   text: 'text-red-700',   ring: 'ring-red-500' },
   ];
 
   return (
@@ -133,25 +136,28 @@ export default function OrdersManager() {
       </div>
 
       {/* ── KPI Stats Bar ───────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {statCards.map(({ label, value, sub, icon: Icon, bg, border, text, sub_color }) => (
-          <div
-            key={label}
-            onClick={() => setSelectedStatus(label === 'Total Orders' ? 'All' : label === 'In Progress' ? selectedStatus : label)}
-            className={`${bg} border ${border} rounded-2xl px-4 py-3.5 cursor-pointer hover:shadow-md transition-all group`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 truncate">{label}</p>
-                <p className={`text-3xl font-black ${text} leading-none`}>{loading ? '—' : value}</p>
-                <p className={`text-[10px] mt-1.5 ${sub_color} truncate`}>{sub}</p>
-              </div>
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${bg} border ${border} shrink-0 group-hover:scale-110 transition-transform`}>
-                <Icon className={`w-4 h-4 ${text}`} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+        {statCards.map(({ key, label, value, sub, icon: Icon, bg, border, text, ring }) => {
+          const isActive = selectedStatus === key;
+          return (
+            <div
+              key={key}
+              onClick={() => setSelectedStatus(key)}
+              className={`${bg} border ${isActive ? `${border} ring-2 ${ring} shadow-md scale-[1.02]` : `${border} opacity-85 hover:opacity-100 hover:shadow-sm`} rounded-2xl p-3 cursor-pointer transition-all group`}
+            >
+              <div className="flex items-start justify-between gap-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-gray-400 mb-0.5 truncate">{label}</p>
+                  <p className={`text-2xl font-black ${text} leading-none`}>{loading ? '—' : value}</p>
+                  <p className="text-[9px] mt-1 text-gray-500/80 truncate font-medium">{sub}</p>
+                </div>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${bg} border ${border} shrink-0 group-hover:scale-105 transition-transform`}>
+                  <Icon className={`w-3.5 h-3.5 ${text}`} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {successMsg && (
