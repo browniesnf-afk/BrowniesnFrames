@@ -103,7 +103,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }>(() => {
     try {
       const saved = localStorage.getItem(COUPON_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            code: parsed.code || '',
+            type: parsed.type || 'percentage',
+            value: Number(parsed.value ?? 0)
+          };
+        } else if (typeof parsed === 'string') {
+          return { code: parsed, type: 'percentage', value: 0 };
+        }
+      }
     } catch (e) {}
     return { code: '', type: 'percentage', value: 0 };
   });
@@ -117,7 +128,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [cart]);
 
   useEffect(() => {
-    if (couponState.code) {
+    if (couponState && couponState.code) {
       localStorage.setItem(COUPON_KEY, JSON.stringify(couponState));
     } else {
       localStorage.removeItem(COUPON_KEY);
@@ -133,20 +144,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         { event: '*', schema: 'public', table: 'promo_codes' },
         (payload) => {
           console.log('⚡ Realtime promo code change in Cart:', payload);
-          const appliedCode = couponState.code.toUpperCase();
+          const appliedCode = (couponState?.code || '').toUpperCase();
           if (!appliedCode) return;
 
           if (payload.eventType === 'DELETE') {
-            const deletedCode = (payload.old.code || '').toUpperCase();
-            // Since payload.old might not contain the code string depending on publication settings,
-            // we re-verify or handle it by comparing id or code if present.
-            if (deletedCode === appliedCode || payload.old.id) {
+            const deletedCode = (payload.old?.code || '').toUpperCase();
+            if (deletedCode === appliedCode || payload.old?.id) {
               removeCoupon();
               alert(`⚠️ The applied promo code "${appliedCode}" has been removed by the administrator.`);
             }
           } else if (payload.eventType === 'UPDATE') {
             const updatedCode = payload.new;
-            if (updatedCode.code?.toUpperCase() === appliedCode) {
+            if (updatedCode && updatedCode.code?.toUpperCase() === appliedCode) {
               if (updatedCode.is_active === false) {
                 removeCoupon();
                 alert(`⚠️ The applied promo code "${appliedCode}" is now inactive.`);
@@ -168,7 +177,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [couponState.code]);
+  }, [couponState?.code]);
 
   const triggerFlyAnimation = (
     imageSrc: string,

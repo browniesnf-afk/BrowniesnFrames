@@ -72,7 +72,7 @@ export function useProducts(categoryFilter?: string) {
         (payload) => {
           console.log('⚡ Realtime product update:', payload);
           
-          if (payload.eventType === 'INSERT') {
+          if (payload.eventType === 'INSERT' && payload.new) {
             const formatted: ProductItem = {
               id: payload.new.id,
               title: payload.new.title,
@@ -92,7 +92,7 @@ export function useProducts(categoryFilter?: string) {
                 return [formatted, ...prev];
               });
             }
-          } else if (payload.eventType === 'UPDATE') {
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
             const formatted: ProductItem = {
               id: payload.new.id,
               title: payload.new.title,
@@ -111,7 +111,7 @@ export function useProducts(categoryFilter?: string) {
             } else {
               setProducts(prev => prev.filter(p => p.id !== formatted.id));
             }
-          } else if (payload.eventType === 'DELETE') {
+          } else if (payload.eventType === 'DELETE' && payload.old) {
             setProducts(prev => prev.filter(p => p.id !== payload.old.id));
           }
         }

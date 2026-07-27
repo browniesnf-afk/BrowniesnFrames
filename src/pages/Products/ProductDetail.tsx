@@ -327,7 +327,7 @@ const checkIsCustomizable = (p: any): boolean => {
         { event: 'UPDATE', schema: 'public', table: 'products' },
         (payload) => {
           console.log('⚡ Product detail realtime update:', payload);
-          if (payload.new.id === product?.id || payload.new.slug === id) {
+          if (payload.new && (payload.new.id === product?.id || payload.new.slug === id)) {
             setProduct(payload.new);
           }
         }
@@ -337,7 +337,7 @@ const checkIsCustomizable = (p: any): boolean => {
         { event: 'DELETE', schema: 'public', table: 'products' },
         (payload) => {
           console.log('⚡ Product detail realtime delete:', payload);
-          if (payload.old.id === product?.id) {
+          if (payload.old && payload.old.id === product?.id) {
             setProduct(null);
           }
         }
