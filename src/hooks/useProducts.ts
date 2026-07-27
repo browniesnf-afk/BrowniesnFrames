@@ -47,13 +47,14 @@ export function useProducts(categoryFilter?: string) {
           link: `/products/${item.slug || item.id}`,
           category: item.category
         }));
+        console.log('useProducts success formatting:', formatted.length, 'products');
         setProducts(formatted);
       } else {
-        // Fallback to default design reference products if database table is empty
+        console.log('useProducts data empty, using fallback categories');
         setProducts(getFallbackProducts(categoryFilter));
       }
     } catch (err: any) {
-      console.warn('Supabase fetch notice (using fallback):', err.message);
+      console.error('useProducts fetch error (using fallback):', err);
       setProducts(getFallbackProducts(categoryFilter));
     } finally {
       setLoading(false);
